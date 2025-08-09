@@ -1,200 +1,133 @@
-// EnhancedFormEditor.js
-import React, { useState } from 'react';
-import { DocumentPlusIcon, PhotoIcon, TrashIcon } from '@heroicons/react/24/outline';
-import CategorizeQuestion from './CategorizeQuestion';
-import ClozeQuestion from './ClozeQuestion';
+import { useState } from 'react';
+import { 
+    PhotoIcon,
+    TrashIcon,
+    PlusIcon
+} from '@heroicons/react/24/outline';
+import FieldEditor from './FieldEditor';
 
-const questionTypes = [
-  { value: 'text', label: 'Text Answer' },
-  { value: 'categorize', label: 'Categorize' },
-  { value: 'cloze', label: 'Cloze (Fill-in-the-blank)' },
-  { value: 'comprehension', label: 'Comprehension' },
-];
+export default function FormEditor({
+    formData, 
+    setFormData,
+    handleImageUpload,
+    addQuestion,
+    handleQuestionImageUpload,
+    updateQuestion,
+    removeQuestion
+}) {
+    const [activeTab, setActiveTab] = useState('categorize');
 
-const FormEditor = ({ form, onChange }) => {
-  const [headerImage, setHeaderImage] = useState(form.headerImage || '');
-  const [questions, setQuestions] = useState(form.questions || []);
-
-  const handleQuestionChange = (index, updatedQuestion) => {
-    const updatedQuestions = [...questions];
-    updatedQuestions[index] = updatedQuestion;
-    setQuestions(updatedQuestions);
-    onChange({ ...form, questions: updatedQuestions });
-  };
-
-  const addQuestion = (type) => {
-    const newQuestion = {
-      type,
-      questionText: '',
-      required: false,
-      points: 1
-    };
-    
-    // Type-specific initial values
-    if (type === 'categorize') {
-      newQuestion.categories = [];
-      newQuestion.items = [];
-    } else if (type === 'cloze') {
-      newQuestion.clozeText = '';
-      newQuestion.blanks = [];
-    } else if (type === 'comprehension') {
-      newQuestion.passage = '';
-      newQuestion.mcqs = [];
-    }
-    
-    setQuestions([...questions, newQuestion]);
-  };
-
-  const uploadImage = async (file) => {
-    // Implement actual image upload to Cloudinary or similar service
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // In a real app, you would upload to a service and get a URL
-        resolve(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleHeaderImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = await uploadImage(file);
-      setHeaderImage(imageUrl);
-      onChange({ ...form, headerImage: imageUrl });
-    }
-  };
-
-  const handleQuestionImageChange = async (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = await uploadImage(file);
-      const updatedQuestion = { ...questions[index], questionImage: imageUrl };
-      handleQuestionChange(index, updatedQuestion);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Form Header Image</label>
-        {headerImage ? (
-          <div className="relative">
-            <img src={headerImage} alt="Header" className="w-full h-48 object-cover rounded" />
-            <button
-              onClick={() => {
-                setHeaderImage('');
-                onChange({ ...form, headerImage: '' });
-              }}
-              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer">
-            <PhotoIcon className="h-8 w-8 text-gray-400" />
-            <span className="mt-2 text-sm text-gray-600">Click to upload header image</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleHeaderImageChange}
-              className="hidden"
-            />
-          </label>
-        )}
-      </div>
-
-      {questions.map((question, index) => (
-        <div key={index} className="bg-white p-6 rounded-lg shadow">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={question.questionText}
-                onChange={(e) => handleQuestionChange(index, {
-                  ...question,
-                  questionText: e.target.value
-                })}
-                className="w-full text-lg font-medium border-b border-gray-300 focus:border-blue-500 focus:outline-none"
-                placeholder="Enter question text"
-              />
+    return (
+        <>
+            <div className="mb-6 bg-white p-6 rounded-lg shadow">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Form Header Image</label>
+                {formData.headerImage ? (
+                    <div className="relative">
+                        <img
+                            src={formData.headerImage}
+                            alt="Header preview"
+                            className="w-full h-48 object-contain rounded border"
+                            height={100}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, headerImage: '' })}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                ) : (
+                    <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer">
+                        <PhotoIcon className="h-8 w-8 text-gray-400" />
+                        <span className="mt-2 text-sm text-gray-600">Upload header image</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                    </label>
+                )}
             </div>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1 cursor-pointer">
+
+            <div className="mb-6 bg-white p-6 rounded-lg shadow">
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                    Form Title
+                </label>
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleQuestionImageChange(index, e)}
-                  className="hidden"
+                    type="text"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    required
                 />
-                <PhotoIcon className="h-5 w-5 text-gray-500" />
-              </label>
-              <button
-                onClick={() => {
-                  const updatedQuestions = questions.filter((_, i) => i !== index);
-                  setQuestions(updatedQuestions);
-                  onChange({ ...form, questions: updatedQuestions });
-                }}
-                className="text-red-500 hover:text-red-700"
-              >
-                <TrashIcon className="h-5 w-5" />
-              </button>
             </div>
-          </div>
 
-          {question.questionImage && (
-            <div className="relative mb-4">
-              <img
-                src={question.questionImage}
-                alt="Question"
-                className="max-w-full max-h-48 rounded"
-              />
-              <button
-                onClick={() => handleQuestionChange(index, {
-                  ...question,
-                  questionImage: ''
-                })}
-                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
+            <div className="mb-6 bg-white p-6 rounded-lg shadow">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description (Optional)
+                </label>
+                <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                />
             </div>
-          )}
 
-          <div className="mt-4">
-            {question.type === 'categorize' && (
-              <CategorizeQuestion
-                question={question}
-                onChange={(updatedQuestion) => handleQuestionChange(index, updatedQuestion)}
-              />
-            )}
-            {question.type === 'cloze' && (
-              <ClozeQuestion
-                question={question}
-                onChange={(updatedQuestion) => handleQuestionChange(index, updatedQuestion)}
-              />
-            )}
-            {/* Similar implementations for other question types */}
-          </div>
-        </div>
-      ))}
+            <div className="mb-6 bg-white rounded-lg shadow">
+                <div className="border-b border-gray-200">
+                    <nav className="flex -mb-px">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('categorize')}
+                            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'categorize' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                        >
+                            Categorized Questions
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('cloze')}
+                            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'cloze' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                        >
+                            Fill in the Blanks
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('comprehension')}
+                            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'comprehension' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                        >
+                            Comprehension
+                        </button>
+                    </nav>
+                </div>
+                <div className="p-6">
+                    <button
+                        type="button"
+                        onClick={() => addQuestion(activeTab)}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                        <PlusIcon className="h-5 w-5 mr-2" />
+                        Add {activeTab === 'categorize' ? 'Categorize Question' :
+                            activeTab === 'cloze' ? 'Cloze Question' : 'Comprehension Question'}
+                    </button>
+                </div>
+            </div>
 
-      <div className="flex gap-2">
-        {questionTypes.map((type) => (
-          <button
-            key={type.value}
-            onClick={() => addQuestion(type.value)}
-            className="flex items-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-md"
-          >
-            <DocumentPlusIcon className="h-4 w-4" />
-            Add {type.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export default FormEditor;
+            <div className="space-y-6 mb-6">
+                {formData.questions.map((question) => (
+                    <FieldEditor 
+                        key={question.id}
+                        question={question}
+                        handleQuestionImageUpload={handleQuestionImageUpload}
+                        updateQuestion={updateQuestion}
+                        removeQuestion={removeQuestion}
+                    />
+                ))}
+            </div>
+        </>
+    );
+}
