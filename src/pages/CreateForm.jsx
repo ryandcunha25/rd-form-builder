@@ -15,12 +15,19 @@ export default function CreateForm() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleImageUpload = async (e) => {
+    // Example of image handling in your React component
+    const handleImageUpload = (e, questionId = null) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setFormData({ ...formData, headerImage: event.target.result });
+                if (questionId) {
+                    // For question images
+                    updateQuestion(questionId, { image: event.target.result });
+                } else {
+                    // For header image
+                    setFormData({ ...formData, headerImage: event.target.result });
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -95,6 +102,7 @@ export default function CreateForm() {
 
         try {
             const { data } = await axios.post('http://localhost:5000/createForm', formData);
+            console.log('Form created successfully:', data);
             navigate(`/forms/${data._id}/edit`, {
                 state: { success: 'Form created successfully!' }
             });
@@ -111,8 +119,8 @@ export default function CreateForm() {
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Create New Form</h1>
 
             <form onSubmit={handleSubmit} className="max-w-6xl mx-auto">
-                <FormEditor 
-                    formData={formData} 
+                <FormEditor
+                    formData={formData}
                     setFormData={setFormData}
                     handleImageUpload={handleImageUpload}
                     addQuestion={addQuestion}
@@ -120,9 +128,9 @@ export default function CreateForm() {
                     updateQuestion={updateQuestion}
                     removeQuestion={removeQuestion}
                 />
-                
+
                 <FormPreview formData={formData} />
-                
+
                 {error && <div className="text-red-500 mb-4 p-4 bg-red-50 rounded">{error}</div>}
 
                 <div className="flex justify-end gap-3 mt-8">

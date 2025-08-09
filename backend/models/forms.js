@@ -10,6 +10,7 @@ const fieldSchema = new mongoose.Schema({
   options: [String],
 });
 
+
 const formSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -42,23 +43,30 @@ const formSchema = new mongoose.Schema({
       type: Number,
       default: 1
     },
+    image: {
+      type: String, // URL or base64 encoded image for the question
+      default: ''
+    },
     // Fields specific to categorize questions
     categories: [{
       type: String
     }],
     items: [{
+      id: String,
       text: String,
       category: String
     }],
     // Fields specific to cloze questions
     clozeText: String,
     blanks: [{
+      id: String,
       word: String,
       options: [String]
     }],
     // Fields specific to comprehension questions
     passage: String,
     mcqs: [{
+      id: String,
       question: String,
       options: [String],
       correctAnswer: Number // index of correct option
@@ -76,6 +84,12 @@ const formSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User' // Reference to user who created the form
   }
+});
+
+// Update the updatedAt field before saving
+formSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 
