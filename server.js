@@ -11,10 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.REACT_APP_MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(process.env.REACT_APP_MONGODB_URI)
 .then(() => console.log("✅ MongoDB connected successfully"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -22,6 +19,10 @@ mongoose.connect(process.env.REACT_APP_MONGODB_URI, {
 app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
+
+// Import routes
+const formRoutes = require('./backend/routes/forms');
+app.use('/', formRoutes);
 
 // Start server
 app.listen(PORT, () => {

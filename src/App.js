@@ -1,25 +1,23 @@
 import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { HomeIcon } from "@heroicons/react/24/solid";
+import Dashboard from '../src/pages/Dashboard';
+import CreateForm from '../src/pages/CreateForm';
+import EditForm from '../src/pages/EditForm';
+import ViewForm from '../src/pages/ViewForm';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <Router>
+      <div>
+        {/* <HomeIcon className="h-6 w-6 text-blue-500" /> */}
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+        </Routes>
+      </div>
+    </Router>
+  );  
 }
 
 export default App;

@@ -28,6 +28,15 @@
   color: #61dafb;
 }
 
+/* Add to your global CSS */
+.tiny-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+.small-image {
+  max-height: 4rem;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
