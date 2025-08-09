@@ -11,42 +11,71 @@ const fieldSchema = new mongoose.Schema({
 });
 
 const formSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  headerImage: { type: String }, // URL to uploaded image
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  headerImage: {
+    type: String, // URL or base64 encoded image
+    default: ''
+  },
   questions: [{
-    type: { 
-      type: String, 
-      enum: ['categorize', 'cloze', 'comprehension', 'text', 'dropdown', 'checkbox'], 
-      required: true 
+    type: {
+      type: String,
+      enum: ['categorize', 'cloze', 'comprehension'],
+      required: true
     },
-    questionText: { type: String, required: true },
-    questionImage: { type: String }, // URL to uploaded image
-    // Categorize-specific fields
-    categories: [String],
+    questionText: {
+      type: String,
+      default: ''
+    },
+    required: {
+      type: Boolean,
+      default: false
+    },
+    points: {
+      type: Number,
+      default: 1
+    },
+    // Fields specific to categorize questions
+    categories: [{
+      type: String
+    }],
     items: [{
       text: String,
-      belongsTo: String // category name
+      category: String
     }],
-    // Cloze-specific fields
+    // Fields specific to cloze questions
     clozeText: String,
     blanks: [{
-      answer: String,
-      hint: String
+      word: String,
+      options: [String]
     }],
-    // Comprehension-specific fields
+    // Fields specific to comprehension questions
     passage: String,
     mcqs: [{
       question: String,
       options: [String],
-      correctAnswer: String
-    }],
-    // Common fields
-    required: { type: Boolean, default: false },
-    points: { type: Number, default: 1 }
+      correctAnswer: Number // index of correct option
+    }]
   }],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' // Reference to user who created the form
+  }
 });
 
 

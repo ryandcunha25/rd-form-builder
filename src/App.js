@@ -14,6 +14,7 @@ function App() {
         {/* <HomeIcon className="h-6 w-6 text-blue-500" /> */}
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/forms/create" element={<CreateForm />} />
         </Routes>
       </div>
     </Router>

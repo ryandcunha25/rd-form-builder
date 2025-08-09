@@ -15,18 +15,31 @@ router.get('/forms', async (req, res) => {
 });
 
 // Create new form
-router.post('/', async (req, res) => {
-  const { title, fields } = req.body;
+router.post('/createForm', async (req, res) => {
+  const { title, description, headerImage, questions, userId } = req.body;
   
   try {
     const newForm = new Form({
       title,
-      fields,
+      description,
+      headerImage,
+      questions,
+      createdBy: userId
     });
+
     const savedForm = await newForm.save();
-    res.status(201).json(savedForm);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Form created successfully',
+      form: savedForm
+    });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ 
+      success: false,
+      message: 'Failed to create form',
+      error: err.message 
+    });
   }
 });
 
