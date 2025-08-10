@@ -111,8 +111,8 @@ export default function ClozeResponse({ question, value = [], onChange }) {
       return <p className="text-gray-500">No blanks available.</p>;
     }
 
-    console.log('Blanks data:', blanks);
-    console.log('Cloze text:', question.clozeText);
+    // console.log('Blanks data:', blanks);
+    // console.log('Cloze text:', question.clozeText);
 
     // Method 1: If blanks have a 'word' property, replace exact word matches
     if (blanks.length > 0 && blanks[0].word) {
@@ -292,7 +292,7 @@ export default function ClozeResponse({ question, value = [], onChange }) {
         </DndContext>
         
         {/* Show filled answers */}
-        {value.some(Boolean) && (
+        {/* {value.some(Boolean) && (
           <div className="mt-4 pt-4 border-t border-gray-300">
             <h5 className="text-sm font-medium text-gray-600 mb-2">Your answers:</h5>
             <div className="flex flex-wrap gap-2">
@@ -312,7 +312,7 @@ export default function ClozeResponse({ question, value = [], onChange }) {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {allOptions.length > 0 && (
