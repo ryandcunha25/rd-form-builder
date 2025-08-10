@@ -40,10 +40,10 @@ useEffect(() => {
           if (question.type === 'categorize') {
             initialResponses[question.id] = question.items.map(item => ({
               itemId: item.id,
-              category: ''
+              category: item.category ||  ''
             }));
           } else if (question.type === 'cloze') {
-            console.log(question.blanks.length);
+            // console.log(question.blanks.length);
             // Initialize with empty strings for each blank
             initialResponses[question.id] = Array(question.blanks.length || 0).fill('');
           } else if (question.type === 'comprehension') {

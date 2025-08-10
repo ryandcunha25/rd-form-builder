@@ -74,7 +74,6 @@ const DroppableCategory = ({ id, title, items, onRemove }) => {
   );
 };
 
-// Separate component for uncategorized items area
 const ItemsContainer = ({ items }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: 'uncategorized',
@@ -109,7 +108,6 @@ export default function CategorizeResponse({ question, value, onChange }) {
   const [items] = useState(question.items);
   const [activeId, setActiveId] = useState(null);
 
-  // Configure sensors for different input methods
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -145,13 +143,11 @@ export default function CategorizeResponse({ question, value, onChange }) {
 
     if (!over) return;
 
-    // If dropped on a category
     if (categories.includes(over.id)) {
       const updated = value.filter(item => item.itemId !== active.id);
       updated.push({ itemId: active.id, category: over.id });
       onChange(updated);
     }
-    // If dropped back on uncategorized area
     else if (over.id === 'uncategorized') {
       const updated = value.filter(item => item.itemId !== active.id);
       onChange(updated);
@@ -163,11 +159,21 @@ export default function CategorizeResponse({ question, value, onChange }) {
     onChange(updated);
   };
 
-  // Get active item data for overlay
   const activeItem = activeId ? items.find(item => item.id === activeId) : null;
-
-  // Get uncategorized items
   const uncategorizedItems = items.filter(item => !getItemCategory(item.id));
+
+  // Get categorized items for display
+  const getCategoryItems = (category) => {
+    return items
+      .filter(item => {
+        const categoryForItem = getItemCategory(item.id);
+        return categoryForItem === category;
+      })
+      .map(item => ({
+        id: item.id,
+        text: item.text
+      }));
+  };
 
   return (
     <DndContext
@@ -178,37 +184,28 @@ export default function CategorizeResponse({ question, value, onChange }) {
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Items Column */}
           <div>
             <h4 className="font-medium mb-3 text-gray-700">Items</h4>
             <ItemsContainer items={uncategorizedItems} />
           </div>
           
-          {/* Categories Column */}
           <div>
             <h4 className="font-medium mb-3 text-gray-700">Categories</h4>
             <div className="grid grid-cols-1 gap-4">
-              {categories.map((category) => {
-                const categoryItems = items
-                  .filter(item => getItemCategory(item.id) === category)
-                  .map(item => ({ id: item.id, text: item.text }));
-
-                return (
-                  <DroppableCategory
-                    key={category}
-                    id={category}
-                    title={category}
-                    items={categoryItems}
-                    onRemove={handleRemoveFromCategory}
-                  />
-                );
-              })}
+              {categories.map((category) => (
+                <DroppableCategory
+                  key={category}
+                  id={category}
+                  title={category}
+                  items={getCategoryItems(category)}
+                  onRemove={handleRemoveFromCategory}
+                />
+              ))}
             </div>
           </div>
         </div>
       </div>
       
-      {/* Drag Preview */}
       <DragOverlay>
         {activeItem ? (
           <div className="p-3 bg-white border border-blue-300 rounded-lg shadow-lg">

@@ -1,7 +1,7 @@
 // src/components/QuestionRenderer.js
 import React, { forwardRef } from 'react';
 import CategorizeResponse from './CategorizeResponse';
-import ClozeResponse from './ClozeResponse'; // Make sure this path is correct
+import ClozeResponse from './ClozeResponse';
 import ComprehensionResponse from './ComprehensionResponse';
 import DefaultResponse from './DefaultResponse';
 
@@ -14,13 +14,23 @@ const QuestionRenderer = forwardRef(({
   toggleMarkForReview 
 }, ref) => {
   
+  // Get consistent question ID
+  const questionId = question._id?.$oid || question._id || question.id;
+  
+  // console.log('QuestionRenderer props:', {
+  //   questionType: question.type,
+  //   questionId,
+  //   valueType: typeof value,
+  //   value: value
+  // });
+  
   const renderQuestion = () => {
     switch (question.type) {
       case 'categorize':
         return (
           <CategorizeResponse 
             question={question}
-            value={value}
+            value={Array.isArray(value) ? value : []}
             onChange={onChange}
           />
         );
@@ -28,7 +38,7 @@ const QuestionRenderer = forwardRef(({
         return (
           <ClozeResponse
             question={question}
-            value={value || Array(question.blanks.length).fill('')}
+            value={Array.isArray(value) ? value : Array(question.blanks?.length || 0).fill('')}
             onChange={onChange}
           />
         );
@@ -36,7 +46,7 @@ const QuestionRenderer = forwardRef(({
         return (
           <ComprehensionResponse
             question={question}
-            value={value}
+            value={Array.isArray(value) ? value : Array(question.mcqs?.length || 0).fill('')}
             onChange={onChange}
           />
         );
@@ -44,7 +54,7 @@ const QuestionRenderer = forwardRef(({
         return (
           <DefaultResponse
             question={question}
-            value={value}
+            value={value || ''}
             onChange={onChange}
           />
         );
@@ -56,8 +66,8 @@ const QuestionRenderer = forwardRef(({
 
   return (
     <div 
-      id={`question-${question.id}`}
-      ref={el => ref.current[question.id] = el}
+      id={`question-${questionId}`}
+      ref={el => ref.current[questionId] = el}
       className={`p-6 rounded-xl transition-all ${
         questionStatus?.marked 
           ? 'bg-yellow-50 border-2 border-yellow-200' 
