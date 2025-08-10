@@ -15,6 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/forms/create" element={<CreateForm />} />
+          <Route path="/forms/:id" element={<ViewForm/>} />
         </Routes>
       </div>
     </Router>

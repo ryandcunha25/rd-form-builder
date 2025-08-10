@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
+// src/components/ViewForm.js
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import SidebarNavigation from './components/SidebarNavigation';
+import FormHeader from './components/FormHeader';
+import QuestionRenderer from './components/QuestionRenderer';
 
 export default function ViewForm() {
   const { id } = useParams();
@@ -9,31 +13,48 @@ export default function ViewForm() {
   const [responses, setResponses] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [questionStatus, setQuestionStatus] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const questionRefs = useRef({});
 
-  useEffect(() => {
+useEffect(() => {
     const fetchForm = async () => {
       try {
-        const { data } = await axios.get(`/api/forms/${id}`);
+        const { data } = await axios.get(`http://localhost:5000/${id}`);
         setForm(data);
         
-        // Initialize responses based on question types
+        // Initialize responses and status
         const initialResponses = {};
+        const initialStatus = {};
+        
         data.questions.forEach(question => {
+          initialStatus[question.id] = {
+            answered: false,
+            marked: false
+          };
+          console.log(question)
+          
           if (question.type === 'categorize') {
             initialResponses[question.id] = question.items.map(item => ({
               itemId: item.id,
               category: ''
             }));
           } else if (question.type === 'cloze') {
-            initialResponses[question.id] = Array(question.blanks.length).fill('');
+            console.log(question.blanks.length);
+            // Initialize with empty strings for each blank
+            initialResponses[question.id] = Array(question.blanks.length || 0).fill('');
           } else if (question.type === 'comprehension') {
-            initialResponses[question.id] = Array(question.mcqs.length).fill('');
+            initialResponses[question.id] = Array(question.mcqs?.length || 0).fill('');
           } else {
             initialResponses[question.id] = '';
           }
         });
+        
         setResponses(initialResponses);
+        setQuestionStatus(initialStatus);
       } catch (err) {
         setError('Failed to load form. Please try again.');
         console.error(err);
@@ -49,6 +70,57 @@ export default function ViewForm() {
       ...responses,
       [questionId]: value
     });
+    
+    // Update question answered status
+    setQuestionStatus(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        answered: isQuestionAnswered(questionId, value)
+      }
+    }));
+  };
+
+  const isQuestionAnswered = (questionId, value) => {
+    const question = form.questions.find(q => q.id === questionId);
+    if (!question) return false;
+    
+    switch (question.type) {
+      case 'categorize':
+        return value.every(item => item.category !== '');
+      case 'cloze':
+        return value.every(blank => blank.trim() !== '');
+      case 'comprehension':
+        return value.every(answer => answer !== '');
+      case 'checkbox':
+        return value !== false;
+      default:
+        return value !== '';
+    }
+  };
+
+  const toggleMarkForReview = (questionId) => {
+    setQuestionStatus(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        marked: !prev[questionId].marked
+      }
+    }));
+  };
+
+  const handleSaveDraft = async () => {
+    setIsSaving(true);
+    try {
+      await axios.post(`/api/forms/${id}/drafts`, { responses });
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 3000);
+    } catch (err) {
+      setError('Failed to save draft. Please try again.');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -58,7 +130,13 @@ export default function ViewForm() {
 
     try {
       await axios.post(`/api/forms/${id}/responses`, { responses });
-      navigate('/', { state: { success: 'Form submitted successfully!' } });
+      navigate('/confirmation', { 
+        state: { 
+          success: 'Form submitted successfully!',
+          answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
+          totalQuestions: form.questions.length
+        } 
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
       console.error(err);
@@ -67,158 +145,132 @@ export default function ViewForm() {
     }
   };
 
-  const renderQuestion = (question) => {
-    switch (question.type) {
-      case 'categorize':
-        return (
-          <CategorizeResponse 
-            question={question}
-            value={responses[question.id]}
-            onChange={(val) => handleResponseChange(question.id, val)}
-          />
-        );
-      case 'cloze':
-        return (
-          <ClozeResponse
-            question={question}
-            value={responses[question.id]}
-            onChange={(val) => handleResponseChange(question.id, val)}
-          />
-        );
-      case 'comprehension':
-        return (
-          <ComprehensionResponse
-            question={question}
-            value={responses[question.id]}
-            onChange={(val) => handleResponseChange(question.id, val)}
-          />
-        );
-      default:
-        return (
-          <DefaultResponse
-            question={question}
-            value={responses[question.id]}
-            onChange={(val) => handleResponseChange(question.id, val)}
-          />
-        );
+  const scrollToQuestion = (questionId) => {
+    const element = questionRefs.current[questionId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('ring-2', 'ring-blue-500', 'animate-pulse');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-blue-500', 'animate-pulse');
+      }, 2000);
     }
   };
 
-  if (isLoading) return <div className="flex justify-center items-center h-64">Loading...</div>;
-  if (!form) return <div className="text-center py-12">{error || 'Form not found.'}</div>;
+  if (isLoading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+  );
+  
+  if (!form) return <div className="text-center py-12 text-xl">{error || 'Form not found.'}</div>;
+
+  // Calculate progress
+  const answeredCount = Object.values(questionStatus).filter(s => s.answered).length;
+  const totalQuestions = form.questions.length;
+  const progress = Math.round((answeredCount / totalQuestions) * 100);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        {form.headerImage && (
-          <div className="h-48 w-full overflow-hidden">
-            <img 
-              src={form.headerImage} 
-              alt="Form header" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">{form.title}</h1>
-          {form.description && (
-            <p className="text-gray-600 mb-6">{form.description}</p>
-          )}
+    <div className="flex min-h-screen bg-gray-50">
+      <SidebarNavigation 
+        isOpen={isSidebarOpen}
+        progress={progress}
+        answeredCount={answeredCount}
+        totalQuestions={totalQuestions}
+        questions={form.questions}
+        questionStatus={questionStatus}
+        scrollToQuestion={scrollToQuestion}
+      />
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {form.questions.map((question, index) => (
-              <div key={question.id} className="border-b border-gray-200 pb-6 last:border-0">
-                {question.questionImage && (
-                  <div className="mb-4">
-                    <img 
-                      src={question.questionImage} 
-                      alt="Question" 
-                      className="max-w-full max-h-60 rounded"
-                    />
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64 transition-all duration-300">
+        <div className="container mx-auto px-4 py-8">
+          {/* Mobile Navigation Toggle */}
+          <div className="lg:hidden fixed top-4 left-4 z-20">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 bg-white rounded-lg shadow-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+            <FormHeader 
+              headerImage={form.headerImage} 
+              title={form.title} 
+              description={form.description}
+              progress={progress}
+            />
+            
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-10">
+                {form.questions.map((question, index) => (
+                  <QuestionRenderer
+                    key={question.id}
+                    question={question}
+                    index={index}
+                    value={responses[question.id]}
+                    questionStatus={questionStatus[question.id]}
+                    ref={questionRefs}
+                    onChange={(val) => handleResponseChange(question.id, val)}
+                    toggleMarkForReview={() => toggleMarkForReview(question.id)}
+                  />
+                ))}
+
+                {error && (
+                  <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+                    {error}
                   </div>
                 )}
-                
-                <div className="mb-3">
-                  <h3 className="text-lg font-medium text-gray-800">
-                    {index + 1}. {question.questionText}
-                    {question.required && <span className="text-red-500 ml-1">*</span>}
-                  </h3>
-                  {question.points > 0 && (
-                    <span className="text-sm text-gray-500">{question.points} point(s)</span>
-                  )}
-                </div>
 
-                {renderQuestion(question)}
-              </div>
-            ))}
-
-            {error && (
-              <div className="text-red-500 p-4 bg-red-50 rounded-md">
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Form'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Helper components would be defined here or imported
-function CategorizeResponse({ question, value, onChange }) {
-  const handleCategoryChange = (itemId, category) => {
-    const updated = value.map(item => 
-      item.itemId === itemId ? {...item, category} : item
-    );
-    onChange(updated);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-medium mb-2">Categories</h4>
-          <div className="space-y-2">
-            {question.categories.map(category => (
-              <div key={category} className="p-2 bg-gray-100 rounded">
-                {category}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h4 className="font-medium mb-2">Items</h4>
-          <div className="space-y-2">
-            {question.items.map(item => {
-              const responseItem = value.find(i => i.itemId === item.id) || {};
-              return (
-                <div key={item.id} className="flex items-center gap-2">
-                  <span className="flex-1">{item.text}</span>
-                  <select
-                    value={responseItem.category || ''}
-                    onChange={(e) => handleCategoryChange(item.id, e.target.value)}
-                    className="px-2 py-1 border rounded"
-                    required={question.required}
+                <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleSaveDraft}
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center disabled:opacity-50"
                   >
-                    <option value="">Select</option>
-                    {question.categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
+                    {isSaving ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : 'Save Draft'}
+                  </button>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {draftSaved && (
+                      <div className="flex items-center px-4 py-3 bg-green-50 text-green-700 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Draft saved!
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Submitting...
+                        </>
+                      ) : 'Submit Form'}
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -226,121 +278,3 @@ function CategorizeResponse({ question, value, onChange }) {
   );
 }
 
-function ClozeResponse({ question, value, onChange }) {
-  const handleBlankChange = (index, answer) => {
-    const updated = [...value];
-    updated[index] = answer;
-    onChange(updated);
-  };
-
-  const parts = question.clozeText.split(/(______)/g);
-  let blankIndex = 0;
-
-  return (
-    <div className="space-y-4">
-      <div className="prose max-w-none">
-        {parts.map((part, i) => (
-          part === '______' ? (
-            <span key={i} className="inline-flex mx-1">
-              <input
-                type="text"
-                value={value[blankIndex] || ''}
-                onChange={(e) => handleBlankChange(blankIndex++, e.target.value)}
-                className="w-32 border-b-2 border-dashed border-blue-500 focus:outline-none px-1"
-                placeholder={question.blanks[blankIndex]?.hint}
-                required={question.required}
-              />
-            </span>
-          ) : (
-            <span key={i}>{part}</span>
-          )
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ComprehensionResponse({ question, value, onChange }) {
-  const handleMCQChange = (index, answer) => {
-    const updated = [...value];
-    updated[index] = answer;
-    onChange(updated);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="prose max-w-none border-l-4 border-blue-200 pl-4 py-2 bg-blue-50">
-        {question.passage}
-      </div>
-
-      <div className="space-y-4">
-        {question.mcqs.map((mcq, index) => (
-          <div key={index} className="space-y-2">
-            <p className="font-medium">{index + 1}. {mcq.question}</p>
-            <div className="space-y-2 pl-4">
-              {mcq.options.map((option, optIndex) => (
-                <label key={optIndex} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={`mcq-${index}`}
-                    value={option}
-                    checked={value[index] === option}
-                    onChange={() => handleMCQChange(index, option)}
-                    className="text-blue-600 focus:ring-blue-500"
-                    required={question.required}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DefaultResponse({ question, value, onChange }) {
-  switch (question.type) {
-    case 'text':
-      return (
-        <input
-          type="text"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-          placeholder={question.placeholder}
-          required={question.required}
-        />
-      );
-    case 'dropdown':
-      return (
-        <select
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-          required={question.required}
-        >
-          <option value="">Select an option</option>
-          {question.options.map((option, i) => (
-            <option key={i} value={option}>{option}</option>
-          ))}
-        </select>
-      );
-    case 'checkbox':
-      return (
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={value || false}
-            onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-            required={question.required}
-          />
-          <span>Check if applicable</span>
-        </label>
-      );
-    default:
-      return null;
-  }
-}
