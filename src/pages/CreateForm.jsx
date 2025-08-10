@@ -47,10 +47,10 @@ export default function CreateForm() {
             newQuestion.categories = ['Category 1'];
             newQuestion.items = [{ id: Date.now().toString(), text: 'Item 1', category: 'Category 1' }];
         } else if (type === 'cloze') {
-            newQuestion.clozeText = 'This is a sample sentence.';
-            newQuestion.blanks = [
-                { id: Date.now().toString(), word: 'sample', options: ['sample', 'example', 'test'] }
-            ];
+            newQuestion.clozeText = '';
+            newQuestion.blanks = []
+                // { id: Date.now().toString(), word: 'sample', options: ['sample', 'example', 'test'] }
+            ;
         } else if (type === 'comprehension') {
             newQuestion.passage = 'Read the following passage and answer the questions below.';
             newQuestion.mcqs = [
