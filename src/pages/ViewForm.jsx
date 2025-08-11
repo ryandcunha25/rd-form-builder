@@ -20,44 +20,72 @@ export default function ViewForm() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const questionRefs = useRef({});
 
-useEffect(() => {
+  useEffect(() => {
     const fetchForm = async () => {
       try {
         const { data } = await axios.get(`http://localhost:5000/${id}`);
         setForm(data);
         
-        // Initialize responses and status
+        // Initialize responses and status with better type safety
         const initialResponses = {};
         const initialStatus = {};
         
         data.questions.forEach(question => {
-          initialStatus[question.id] = {
+          // Get consistent question ID (support different ID formats)
+          const questionId = question._id?.$oid || question._id || question.id;
+          
+          initialStatus[questionId] = {
             answered: false,
             marked: false
           };
-          console.log(question)
           
-          if (question.type === 'categorize') {
-            initialResponses[question.id] = question.items.map(item => ({
-              itemId: item.id,
-              category: item.category ||  ''
-            }));
-          } else if (question.type === 'cloze') {
-            // console.log(question.blanks.length);
-            // Initialize with empty strings for each blank
-            initialResponses[question.id] = Array(question.blanks.length || 0).fill('');
-          } else if (question.type === 'comprehension') {
-            initialResponses[question.id] = Array(question.mcqs?.length || 0).fill('');
-          } else {
-            initialResponses[question.id] = '';
+          console.log('Initializing question:', questionId, 'Type:', question.type, question);
+          
+          // Initialize responses based on question type with proper structure
+          switch (question.type) {
+            case 'categorize':
+              initialResponses[questionId] = question.items?.map(item => ({
+                itemId: item.id,
+                category: item.category || ''
+              })) || [];
+              break;
+              
+            case 'cloze':
+              // Initialize with empty strings for each blank
+              const blankCount = question.blanks?.length || 0;
+              initialResponses[questionId] = Array(blankCount).fill('');
+              console.log(`Initialized cloze question ${questionId} with ${blankCount} blanks`);
+              break;
+              
+            case 'comprehension':
+              // Initialize with empty strings for each MCQ
+              const mcqCount = question.mcqs?.length || 0;
+              initialResponses[questionId] = Array(mcqCount).fill('');
+              console.log(`Initialized comprehension question ${questionId} with ${mcqCount} MCQs`);
+              break;
+              
+            case 'checkbox':
+              initialResponses[questionId] = false;
+              break;
+              
+            case 'multiple-choice':
+            case 'radio':
+              initialResponses[questionId] = '';
+              break;
+              
+            default:
+              // For text, textarea, and other simple types
+              initialResponses[questionId] = '';
+              break;
           }
         });
         
+        console.log('Initial responses structured:', initialResponses);
         setResponses(initialResponses);
         setQuestionStatus(initialStatus);
       } catch (err) {
         setError('Failed to load form. Please try again.');
-        console.error(err);
+        console.error('Form fetch error:', err);
       } finally {
         setIsLoading(false);
       }
@@ -66,9 +94,16 @@ useEffect(() => {
   }, [id]);
 
   const handleResponseChange = (questionId, value) => {
-    setResponses({
-      ...responses,
-      [questionId]: value
+    console.log('Response changing for question:', questionId, 'New value:', value, 'Type:', typeof value, 'Is Array:', Array.isArray(value));
+    
+    // Update responses with proper state management
+    setResponses(prevResponses => {
+      const updated = {
+        ...prevResponses,
+        [questionId]: value
+      };
+      console.log('Updated responses state:', updated);
+      return updated;
     });
     
     // Update question answered status
@@ -82,29 +117,47 @@ useEffect(() => {
   };
 
   const isQuestionAnswered = (questionId, value) => {
-    const question = form.questions.find(q => q.id === questionId);
-    if (!question) return false;
+    const question = form?.questions?.find(q => {
+      const qId = q._id?.$oid || q._id || q.id;
+      return qId === questionId;
+    });
+    
+    if (!question) {
+      console.log('Question not found for ID:', questionId);
+      return false;
+    }
+    
+    console.log('Checking if answered - Question:', questionId, 'Type:', question.type, 'Value:', value);
     
     switch (question.type) {
       case 'categorize':
-        return value.every(item => item.category !== '');
+        return Array.isArray(value) && value.length > 0 && value.every(item => item.category !== '');
+        
       case 'cloze':
-        return value.every(blank => blank.trim() !== '');
+        return Array.isArray(value) && value.length > 0 && value.every(blank => blank && blank.trim() !== '');
+        
       case 'comprehension':
-        return value.every(answer => answer !== '');
+        return Array.isArray(value) && value.length > 0 && value.every(answer => answer !== '' && answer != null);
+        
       case 'checkbox':
-        return value !== false;
+        return value === true;
+        
+      case 'multiple-choice':
+      case 'radio':
+        return value !== '' && value != null;
+        
       default:
-        return value !== '';
+        return value !== '' && value != null && value !== undefined;
     }
   };
 
   const toggleMarkForReview = (questionId) => {
+    console.log('Toggling mark for review for question:', questionId);
     setQuestionStatus(prev => ({
       ...prev,
       [questionId]: {
         ...prev[questionId],
-        marked: !prev[questionId].marked
+        marked: !prev[questionId]?.marked
       }
     }));
   };
@@ -112,12 +165,13 @@ useEffect(() => {
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
+      console.log('Saving draft with responses:', responses);
       await axios.post(`/api/forms/${id}/drafts`, { responses });
       setDraftSaved(true);
       setTimeout(() => setDraftSaved(false), 3000);
     } catch (err) {
       setError('Failed to save draft. Please try again.');
-      console.error(err);
+      console.error('Save draft error:', err);
     } finally {
       setIsSaving(false);
     }
@@ -129,6 +183,19 @@ useEffect(() => {
     setError('');
 
     try {
+      console.log('Submitting responses:', responses);
+      // Validate that we have responses for required questions
+      const unansweredRequired = form.questions.filter(question => {
+        const questionId = question._id?.$oid || question._id || question.id;
+        return question.required && !isQuestionAnswered(questionId, responses[questionId]);
+      });
+
+      if (unansweredRequired.length > 0) {
+        setError(`Please answer all required questions: ${unansweredRequired.map(q => `Question ${form.questions.indexOf(q) + 1}`).join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
       await axios.post(`/api/forms/${id}/responses`, { responses });
       navigate('/confirmation', { 
         state: { 
@@ -139,7 +206,7 @@ useEffect(() => {
       });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
-      console.error(err);
+      console.error('Submit error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -206,22 +273,31 @@ useEffect(() => {
             
             <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-10">
-                {form.questions.map((question, index) => (
-                  <QuestionRenderer
-                    key={question.id}
-                    question={question}
-                    index={index}
-                    value={responses[question.id]}
-                    questionStatus={questionStatus[question.id]}
-                    ref={questionRefs}
-                    onChange={(val) => handleResponseChange(question.id, val)}
-                    toggleMarkForReview={() => toggleMarkForReview(question.id)}
-                  />
-                ))}
+                {form.questions.map((question, index) => {
+                  const questionId = question._id?.$oid || question._id || question.id;
+                  
+                  return (
+                    <QuestionRenderer
+                      key={questionId}
+                      question={question}
+                      index={index}
+                      value={responses[questionId]}
+                      questionStatus={questionStatus[questionId]}
+                      ref={questionRefs}
+                      onChange={(val) => handleResponseChange(questionId, val)}
+                      toggleMarkForReview={() => toggleMarkForReview(questionId)}
+                    />
+                  );
+                })}
 
                 {error && (
-                  <div className="p-4 bg-red-50 text-red-700 rounded-lg">
-                    {error}
+                  <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-red-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      {error}
+                    </div>
                   </div>
                 )}
 
@@ -274,7 +350,20 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {/* Debug Panel - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-3 rounded-lg text-xs max-w-sm max-h-32 overflow-auto">
+          <details>
+            <summary className="cursor-pointer">Debug Info</summary>
+            <div className="mt-2 space-y-1">
+              <div>Progress: {answeredCount}/{totalQuestions}</div>
+              <div>Responses: {JSON.stringify(Object.keys(responses))}</div>
+              <div>Question Types: {form?.questions?.map(q => q.type).join(', ')}</div>
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   );
 }
-
