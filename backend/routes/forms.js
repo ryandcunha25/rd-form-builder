@@ -80,25 +80,61 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// And the corresponding simplified route:
+// submission of form
 router.post('/forms/:id/submission', async (req, res) => {
-  
   try {
     const form = await Form.findById(req.params.id);
     if (!form) return res.status(404).json({ message: 'Form not found' });
 
+    // Create new response with score data
     const newResponse = new Response({
       formId: req.params.id,
       responses: req.body.responses,
+      score: req.body.score || 0, // Default to 0 if not provided
+      maxScore: req.body.maxScore || 0, // Default to 0 if not provided
+      completed: true,
+      submittedAt: new Date()
     });
 
     const savedResponse = await newResponse.save();
-    console.log("Saved response:", savedResponse);
-    res.status(201).json(savedResponse);
+    
+    // Update form statistics (optional)
+    await Form.findByIdAndUpdate(req.params.id, {
+      $inc: { 
+        submissionCount: 1,
+        totalScore: req.body.score || 0 
+      },
+      $set: {
+        lastSubmissionAt: new Date()
+      }
+    });
+
+    console.log("Saved response with score:", {
+      id: savedResponse._id,
+      score: savedResponse.score,
+      maxScore: savedResponse.maxScore,
+      percentage: savedResponse.score / savedResponse.maxScore * 100
+    });
+
+    res.status(201).json({
+      success: true,
+      response: {
+        _id: savedResponse._id,
+        formId: savedResponse.formId,
+        score: savedResponse.score,
+        maxScore: savedResponse.maxScore,
+        percentage: Math.round((savedResponse.score / savedResponse.maxScore) * 100),
+        submittedAt: savedResponse.submittedAt
+      }
+    });
     
   } catch (err) {
     console.error("Error saving response:", err);
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ 
+      success: false,
+      message: 'Failed to submit form response',
+      error: err.message 
+    });
   }
 });
 
@@ -106,11 +142,6 @@ router.post('/forms/:id/submission', async (req, res) => {
 router.get('/:id/responses', async (req, res) => {
   try {
     const formId = req.params.id;
-
-    // // Validate form ID
-    // if (!mongoose.Types.ObjectId.isValid(formId)) {
-    //   return res.status(400).json({ success: false, message: 'Invalid form ID' });
-    // }
 
     // Check if form exists
     const form = await Form.findById(formId);
@@ -120,17 +151,24 @@ router.get('/:id/responses', async (req, res) => {
 
     // Get all responses for this form
     const responses = await Response.find({ formId })
-      .populate('submittedBy', 'name email') // Assuming you have user data
+      .populate('submittedBy', 'name email')
       .sort({ submittedAt: -1 });
+
+    // Calculate max possible score from form questions
+    const maxPossibleScore = form.questions.reduce((sum, question) => {
+      return sum + (question.points || 1); // Default to 1 point if not specified
+    }, 0);
 
     // Calculate statistics
     const totalSubmissions = responses.length;
     let averageScore = 0;
+    let highestScore = 0;
     
-    // If you implement scoring later, you can calculate it here
-    // const averageScore = responses.length > 0 
-    //   ? responses.reduce((sum, res) => sum + (res.score || 0), 0) / responses.length 
-    //   : 0;
+    if (totalSubmissions > 0) {
+      const totalScore = responses.reduce((sum, res) => sum + (res.score || 0), 0);
+      averageScore = totalScore / totalSubmissions;
+      highestScore = Math.max(...responses.map(res => res.score || 0));
+    }
 
     // Prepare response data
     const responseData = {
@@ -141,17 +179,29 @@ router.get('/:id/responses', async (req, res) => {
         description: form.description,
         createdAt: form.createdAt,
         updatedAt: form.updatedAt,
-        createdBy: form.createdBy
+        createdBy: form.createdBy,
+        questions: form.questions.map(q => ({
+          _id: q._id,
+          type: q.type,
+          text: q.text,
+          points: q.points || 1 // Include points for each question
+        }))
       },
       responses: responses.map(r => ({
         _id: r._id,
         submittedAt: r.submittedAt,
         submittedBy: r.submittedBy,
-        responses: r.responses // This contains all the answer data
+        responses: r.responses,
+        score: r.score || 0,
+        maxScore: maxPossibleScore,
+        percentage: maxPossibleScore > 0 ? Math.round(((r.score || 0) / maxPossibleScore) * 100) : 0
       })),
       statistics: {
         totalSubmissions,
-        averageScore,
+        averageScore: parseFloat(averageScore.toFixed(2)), // Round to 2 decimal places
+        maxPossibleScore,
+        highestScore,
+        averagePercentage: maxPossibleScore > 0 ? parseFloat(((averageScore / maxPossibleScore) * 100).toFixed(2)) : 0,
         uniqueRespondents: new Set(responses.map(r => r.submittedBy?.toString() || 'anonymous')).size
       }
     };
@@ -166,5 +216,7 @@ router.get('/:id/responses', async (req, res) => {
     });
   }
 });
+
+
 module.exports = router;
 

@@ -177,48 +177,136 @@ export default function ViewForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError('');
 
-    try {
-      console.log('Submitting responses:', responses);
-      // Validate that we have responses for required questions
-      const unansweredRequired = form.questions.filter(question => {
-        const questionId = question._id?.$oid || question._id || question.id;
-        return question.required && !isQuestionAnswered(questionId, responses[questionId]);
-      });
+  try {
+    console.log('Submitting responses:', responses);
+    
+    // Validate that we have responses for required questions
+    const unansweredRequired = form.questions.filter(question => {
+      const questionId = question._id?.$oid || question._id || question.id;
+      return question.required && !isQuestionAnswered(questionId, responses[questionId]);
+    });
 
-      if (unansweredRequired.length > 0) {
-        setError(`Please answer all required questions: ${unansweredRequired.map(q => `Question ${form.questions.indexOf(q) + 1}`).join(', ')}`);
-        setIsSubmitting(false);
-        return;
-      }
-      console.log('All required questions answered, proceeding with submission');
-
-      const response = await axios.post(`http://localhost:5000/forms/${id}/submission`, {
-        responses
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('Response:', response.data);
-      navigate('/confirmation', {
-        state: {
-          success: 'Form submitted successfully!',
-          answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
-          totalQuestions: form.questions.length
-        }
-      });
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
-      console.error('Submit error:', err);
-    } finally {
+    if (unansweredRequired.length > 0) {
+      setError(`Please answer all required questions: ${unansweredRequired.map(q => `Question ${form.questions.indexOf(q) + 1}`).join(', ')}`);
       setIsSubmitting(false);
+      return;
     }
-  };
+
+    // Calculate total points
+    let totalPoints = 0;
+    let maxPossiblePoints = 0;
+
+    form.questions.forEach(question => {
+      const questionId = question._id?.$oid || question._id || question.id;
+      const questionPoints = question.points || 1; // Default to 1 point if not specified
+      maxPossiblePoints += questionPoints;
+      
+      const userAnswer = responses[questionId];
+      console.log(`Checking answer for question ${questionId} (type: ${question.type})`, {
+        userAnswer,
+        correctAnswer: question.correctAnswer
+      });
+
+      if (!userAnswer) {
+        return; // Skip if no answer provided
+      }
+
+      switch (question.type) {
+        case 'categorize':
+          // Check if all items are categorized correctly
+          if (Array.isArray(userAnswer) && question.items) {
+            const allCorrect = question.items.every(item => {
+              const userResponse = userAnswer.find(res => res.itemId === item.id);
+              return userResponse && userResponse.category === item.category;
+            });
+            if (allCorrect) {
+              totalPoints += questionPoints;
+            }
+          }
+          break;
+
+        case 'cloze':
+          // Check if all blanks are filled correctly
+          if (Array.isArray(userAnswer) && question.blanks) {
+            const allCorrect = question.blanks.every((blank, index) => {
+              return userAnswer[index] === blank.word;
+            });
+            if (allCorrect) {
+              totalPoints += questionPoints;
+            }
+          }
+          break;
+
+        case 'comprehension':
+          // Check each MCQ answer
+          if (Array.isArray(userAnswer) && question.mcqs) {
+            const allCorrect = question.mcqs.every((mcq, index) => {
+              return userAnswer[index] === mcq.options[mcq.correctAnswer];
+            });
+            if (allCorrect) {
+              totalPoints += questionPoints;
+            }
+          }
+          break;
+
+        case 'checkbox':
+        case 'multiple-choice':
+        case 'radio':
+          // For simple single-answer questions
+          if (question.correctAnswer !== undefined && 
+              JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
+            totalPoints += questionPoints;
+          }
+          break;
+
+        default:
+          // For text answers, we can't auto-score unless there's a correctAnswer
+          if (question.correctAnswer !== undefined && 
+              userAnswer.toString().toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim()) {
+            totalPoints += questionPoints;
+          }
+          break;
+      }
+    });
+
+    console.log('Calculated score:', {
+      totalPoints,
+      maxPossiblePoints
+    });
+
+    const response = await axios.post(`http://localhost:5000/forms/${id}/submission`, {
+      responses,
+      score: totalPoints,
+      maxScore: maxPossiblePoints
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Submission response:', response.data);
+    navigate('/confirmation', {
+      state: {
+        success: 'Form submitted successfully!',
+        answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
+        totalQuestions: form.questions.length,
+        score: totalPoints,
+        maxScore: maxPossiblePoints,
+        percentage: Math.round((totalPoints / maxPossiblePoints) * 100)
+      }
+    });
+  } catch (err) {
+    setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
+    console.error('Submit error:', err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const scrollToQuestion = (questionId) => {
     const element = questionRefs.current[questionId];

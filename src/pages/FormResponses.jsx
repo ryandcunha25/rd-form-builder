@@ -125,39 +125,130 @@ export default function FormResponses() {
                                 </button>
                             </div>
                         </div>
-                        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                            <div className="bg-blue-50 px-4 py-5 sm:p-6 rounded-lg">
-                                <div className="flex items-center">
-                                    <ChartBarIcon className="h-8 w-8 text-blue-600" />
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Total Submissions</p>
-                                        <p className="mt-1 text-2xl font-semibold text-gray-900">{statistics.totalSubmissions}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-green-50 px-4 py-5 sm:p-6 rounded-lg">
-                                <div className="flex items-center">
-                                    <CheckCircleIcon className="h-8 w-8 text-green-600" />
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Average Score</p>
-                                        <p className="mt-1 text-2xl font-semibold text-gray-900">
-                                            {statistics.averageScore}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-purple-50 px-4 py-5 sm:p-6 rounded-lg">
-                                <div className="flex items-center">
-                                    <UserIcon className="h-8 w-8 text-purple-600" />
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Unique Respondents</p>
-                                        <p className="mt-1 text-2xl font-semibold text-gray-900">
-                                            {statistics.uniqueRespondents}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-4">
+  <div className="bg-blue-50 px-4 py-5 sm:p-6 rounded-lg">
+    <div className="flex items-center">
+      <ChartBarIcon className="h-8 w-8 text-blue-600" />
+      <div className="ml-4">
+        <p className="text-sm font-medium text-gray-600">Total Submissions</p>
+        <p className="mt-1 text-2xl font-semibold text-gray-900">{statistics.totalSubmissions}</p>
+      </div>
+    </div>
+  </div>
+  <div className="bg-green-50 px-4 py-5 sm:p-6 rounded-lg">
+    <div className="flex items-center">
+      <CheckCircleIcon className="h-8 w-8 text-green-600" />
+      <div className="ml-4">
+        <p className="text-sm font-medium text-gray-600">Average Score</p>
+        <p className="mt-1 text-2xl font-semibold text-gray-900">
+          {statistics.averageScore} / {statistics.maxPossibleScore}
+        </p>
+        <p className="mt-1 text-sm text-gray-600">
+          ({Math.round((statistics.averageScore / statistics.maxPossibleScore) * 100)}%)
+        </p>
+      </div>
+    </div>
+  </div>
+  <div className="bg-purple-50 px-4 py-5 sm:p-6 rounded-lg">
+    <div className="flex items-center">
+      <UserIcon className="h-8 w-8 text-purple-600" />
+      <div className="ml-4">
+        <p className="text-sm font-medium text-gray-600">Unique Respondents</p>
+        <p className="mt-1 text-2xl font-semibold text-gray-900">
+          {statistics.uniqueRespondents}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div className="bg-yellow-50 px-4 py-5 sm:p-6 rounded-lg">
+    <div className="flex items-center">
+      <DocumentTextIcon className="h-8 w-8 text-yellow-600" />
+      <div className="ml-4">
+        <p className="text-sm font-medium text-gray-600">Highest Score</p>
+        <p className="mt-1 text-2xl font-semibold text-gray-900">
+          {statistics.highestScore} / {statistics.maxPossibleScore}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table className="min-w-full divide-y divide-gray-200">
+  <thead className="bg-gray-50">
+    <tr>
+      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Submission ID
+      </th>
+      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Date
+      </th>
+      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Score
+      </th>
+      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Responses
+      </th>
+      <th scope="col" className="relative px-6 py-3">
+        <span className="sr-only">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody className="bg-white divide-y divide-gray-200">
+    {submissions.map((submission) => (
+      <tr
+        key={submission._id}
+        className={`hover:bg-gray-50 cursor-pointer ${selectedSubmission?._id === submission._id ? 'bg-blue-50' : ''}`}
+        onClick={() => setSelectedSubmission(submission)}
+      >
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm font-medium text-gray-900">
+            {submission._id.substring(0, 8)}...
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {new Date(submission.submittedAt).toLocaleString()}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm font-medium text-gray-900">
+            {submission.score} / {submission.maxScore}
+          </div>
+          <div className="text-xs text-gray-500">
+            {Math.round((submission.score / submission.maxScore) * 100)}%
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="text-sm text-gray-900">
+            {submission.responses ? Object.keys(submission.responses).length : 0} questions answered
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <button className="text-blue-600 hover:text-blue-900 mr-4">
+            View
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+{/* <div className="bg-gray-50 p-4 rounded-lg mb-6">
+  <div className="flex justify-between items-center">
+    <div>
+      <h3 className="text-lg font-medium text-gray-900">Submission Information</h3>
+      <p className="mt-1 text-sm text-gray-500">
+        ID: {selectedSubmission._id}
+      </p>
+    </div>
+    <div className="text-right">
+      <div className="text-sm text-gray-500">
+        Submitted: {new Date(selectedSubmission.submittedAt).toLocaleString()}
+      </div>
+      <div className="mt-1 text-lg font-medium">
+        Score: {selectedSubmission.score} / {selectedSubmission.maxScore}
+      </div>
+    </div>
+  </div>
+</div> */}
                     </div>
                 </div>
 
