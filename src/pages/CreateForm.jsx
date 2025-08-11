@@ -52,7 +52,7 @@ export default function CreateForm() {
                 // { id: Date.now().toString(), word: 'sample', options: ['sample', 'example', 'test'] }
             ;
         } else if (type === 'comprehension') {
-            newQuestion.passage = 'Read the following passage and answer the questions below.';
+            newQuestion.passage = 'Enter the passage here...';
             newQuestion.mcqs = [
                 {
                     id: Date.now().toString(),
