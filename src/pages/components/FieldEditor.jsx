@@ -9,7 +9,7 @@ export default function FieldEditor({
     removeQuestion
 }) {
     return (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <div className="bg-white p-6 rounded-lg shadow mb-6 cursor-move hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-900">
                     {question.type === 'categorize' ? 'Categorize Question' :

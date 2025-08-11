@@ -121,6 +121,23 @@ export default function EditForm() {
     }
   };
 
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData('text/plain', index);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    const questions = [...formData.questions];
+    const [draggedItem] = questions.splice(dragIndex, 1);
+    questions.splice(dropIndex, 0, draggedItem);
+    setFormData({ ...formData, questions });
+  };
+
   if (isLoading) return <div className="flex justify-center items-center h-64">Loading...</div>;
 
   return (
@@ -210,14 +227,22 @@ export default function EditForm() {
           </div>
 
           <div className="space-y-6 mb-6">
-            {formData.questions.map((question) => (
-              <FieldEditor
+            {formData.questions.map((question, index) => (
+              <div
                 key={question.id}
-                question={question}
-                handleQuestionImageUpload={handleQuestionImageUpload}
-                updateQuestion={updateQuestion}
-                removeQuestion={removeQuestion}
-              />
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, index)}
+                className="relative"
+              >
+                <FieldEditor
+                  question={question}
+                  handleQuestionImageUpload={handleQuestionImageUpload}
+                  updateQuestion={updateQuestion}
+                  removeQuestion={removeQuestion}
+                />
+              </div>
             ))}
           </div>
 
