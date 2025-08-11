@@ -107,6 +107,68 @@ export default function CategorizeResponse({ question, value, onChange }) {
   const [categories] = useState(question.categories);
   const [items] = useState(question.items);
   const [activeId, setActiveId] = useState(null);
+  const [localValue, setLocalValue] = useState([]);  // Add this line
+
+  // Replace the useEffect with this
+  React.useEffect(() => {
+    // Always start with empty categories
+    setLocalValue([]);
+    onChange([]);
+  }, [question]); // Reset when question changes
+
+  // Update getItemCategory to use localValue instead of value
+  const getItemCategory = (itemId) => {
+    const responseItem = localValue.find(i => i.itemId === itemId);
+    return responseItem ? responseItem.category : null;
+  };
+
+  const handleDragStart = (event) => {
+    const { active } = event;
+    setActiveId(active.id);
+  };
+
+  // Update handleDragEnd to use localValue
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    if (categories.includes(over.id)) {
+      const updated = localValue.filter(item => item.itemId !== active.id);
+      updated.push({ itemId: active.id, category: over.id });
+      setLocalValue(updated);
+      onChange(updated);
+    }
+    else if (over.id === 'uncategorized') {
+      const updated = localValue.filter(item => item.itemId !== active.id);
+      setLocalValue(updated);
+      onChange(updated);
+    }
+  };
+
+  // Update handleRemoveFromCategory to use localValue
+  const handleRemoveFromCategory = (itemId) => {
+    const updated = localValue.filter(item => item.itemId !== itemId);
+    setLocalValue(updated);
+    onChange(updated);
+  };
+
+  const activeItem = activeId ? items.find(item => item.id === activeId) : null;
+  const uncategorizedItems = items.filter(item => !getItemCategory(item.id));
+
+  // Get categorized items for display
+  const getCategoryItems = (category) => {
+    return items
+      .filter(item => {
+        const categoryForItem = getItemCategory(item.id);
+        return categoryForItem === category;
+      })
+      .map(item => ({
+        id: item.id,
+        text: item.text
+      }));
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -126,54 +188,6 @@ export default function CategorizeResponse({ question, value, onChange }) {
       },
     })
   );
-
-  const getItemCategory = (itemId) => {
-    const responseItem = value.find(i => i.itemId === itemId);
-    return responseItem ? responseItem.category : null;
-  };
-
-  const handleDragStart = (event) => {
-    const { active } = event;
-    setActiveId(active.id);
-  };
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over) return;
-
-    if (categories.includes(over.id)) {
-      const updated = value.filter(item => item.itemId !== active.id);
-      updated.push({ itemId: active.id, category: over.id });
-      onChange(updated);
-    }
-    else if (over.id === 'uncategorized') {
-      const updated = value.filter(item => item.itemId !== active.id);
-      onChange(updated);
-    }
-  };
-
-  const handleRemoveFromCategory = (itemId) => {
-    const updated = value.filter(item => item.itemId !== itemId);
-    onChange(updated);
-  };
-
-  const activeItem = activeId ? items.find(item => item.id === activeId) : null;
-  const uncategorizedItems = items.filter(item => !getItemCategory(item.id));
-
-  // Get categorized items for display
-  const getCategoryItems = (category) => {
-    return items
-      .filter(item => {
-        const categoryForItem = getItemCategory(item.id);
-        return categoryForItem === category;
-      })
-      .map(item => ({
-        id: item.id,
-        text: item.text
-      }));
-  };
 
   return (
     <DndContext
