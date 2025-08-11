@@ -6,6 +6,7 @@ import Dashboard from '../src/pages/Dashboard';
 import CreateForm from '../src/pages/CreateForm';
 import EditForm from '../src/pages/EditForm';
 import ViewForm from '../src/pages/ViewForm';
+import FormResponses from '../src/pages/FormResponses';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/forms/create" element={<CreateForm />} />
           <Route path="/forms/:id" element={<ViewForm/>} />
+          <Route path="/forms/:id/responses" element={<FormResponses/>} />
         </Routes>
       </div>
     </Router>

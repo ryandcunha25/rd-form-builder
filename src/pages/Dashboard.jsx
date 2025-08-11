@@ -8,7 +8,8 @@ import {
     PuzzlePieceIcon,
     DocumentTextIcon,
     BookOpenIcon,
-    ArrowUpRightIcon
+    ArrowUpRightIcon,
+    ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
@@ -165,6 +166,13 @@ export default function Dashboard() {
                                                 <PencilIcon className="-ml-1 mr-1.5 h-4 w-4 text-gray-500" />
                                                 Edit
                                             </Link>
+                                            <Link
+                                                to={`/forms/${form._id}/responses`}
+                                                className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                            >
+                                                <ChartBarIcon className="-ml-1 mr-1.5 h-4 w-4 text-green-500" />
+                                                Responses
+                                            </Link>
                                             <button
                                                 onClick={() => handleDelete(form._id)}
                                                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -180,6 +188,7 @@ export default function Dashboard() {
                                             View details
                                         </Link>
                                     </div>
+
                                 </div>
                             </div>
                         ))}

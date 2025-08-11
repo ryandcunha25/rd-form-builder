@@ -46,7 +46,37 @@ const responseSchema = new mongoose.Schema({
   submittedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+score: {
+    type: Number,
+    default: 0
+  },
+  completed: {
+    type: Boolean,
+    default: true
   }
-});
+}, { timestamps: true });
+
+// Optional: Add methods for calculating score if needed
+responseSchema.methods.calculateScore = function(form) {
+  // Implement your scoring logic here based on form questions
+  // This is just a placeholder example
+  let score = 0;
+  const formQuestions = form.questions;
+  
+  formQuestions.forEach(question => {
+    const response = this.responses.get(question._id.toString());
+    if (response && question.correctAnswer) {
+      // Compare response with correctAnswer and add points
+      // This would need to be customized per question type
+      if (JSON.stringify(response) === JSON.stringify(question.correctAnswer)) {
+        score += question.points || 1;
+      }
+    }
+  });
+  
+  this.score = score;
+  return score;
+};
 
 module.exports = mongoose.model('Response', responseSchema);

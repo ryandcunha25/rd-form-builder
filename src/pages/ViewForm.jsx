@@ -197,7 +197,7 @@ export default function ViewForm() {
       }
       console.log('All required questions answered, proceeding with submission');
 
-      const response = await axios.post(`http://localhost:5000/forms/${id}/responses`, {
+      const response = await axios.post(`http://localhost:5000/forms/${id}/submission`, {
         responses
       }, {
         headers: {

@@ -81,9 +81,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // And the corresponding simplified route:
-router.post('/forms/:id/responses', async (req, res) => {
-  console.log("Received response for form ID:", req.params.id);
-  console.log("Response data:", req.body);
+router.post('/forms/:id/submission', async (req, res) => {
   
   try {
     const form = await Form.findById(req.params.id);
@@ -104,5 +102,69 @@ router.post('/forms/:id/responses', async (req, res) => {
   }
 });
 
+// Get all responses for a specific form
+router.get('/:id/responses', async (req, res) => {
+  try {
+    const formId = req.params.id;
+
+    // // Validate form ID
+    // if (!mongoose.Types.ObjectId.isValid(formId)) {
+    //   return res.status(400).json({ success: false, message: 'Invalid form ID' });
+    // }
+
+    // Check if form exists
+    const form = await Form.findById(formId);
+    if (!form) {
+      return res.status(404).json({ success: false, message: 'Form not found' });
+    }
+
+    // Get all responses for this form
+    const responses = await Response.find({ formId })
+      .populate('submittedBy', 'name email') // Assuming you have user data
+      .sort({ submittedAt: -1 });
+
+    // Calculate statistics
+    const totalSubmissions = responses.length;
+    let averageScore = 0;
+    
+    // If you implement scoring later, you can calculate it here
+    // const averageScore = responses.length > 0 
+    //   ? responses.reduce((sum, res) => sum + (res.score || 0), 0) / responses.length 
+    //   : 0;
+
+    // Prepare response data
+    const responseData = {
+      success: true,
+      form: {
+        _id: form._id,
+        title: form.title,
+        description: form.description,
+        createdAt: form.createdAt,
+        updatedAt: form.updatedAt,
+        createdBy: form.createdBy
+      },
+      responses: responses.map(r => ({
+        _id: r._id,
+        submittedAt: r.submittedAt,
+        submittedBy: r.submittedBy,
+        responses: r.responses // This contains all the answer data
+      })),
+      statistics: {
+        totalSubmissions,
+        averageScore,
+        uniqueRespondents: new Set(responses.map(r => r.submittedBy?.toString() || 'anonymous')).size
+      }
+    };
+
+    res.json(responseData);
+  } catch (err) {
+    console.error('Error fetching form responses:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching responses',
+      error: err.message 
+    });
+  }
+});
 module.exports = router;
 
