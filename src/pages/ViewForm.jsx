@@ -25,22 +25,22 @@ export default function ViewForm() {
       try {
         const { data } = await axios.get(`http://localhost:5000/${id}`);
         setForm(data);
-        
+
         // Initialize responses and status with better type safety
         const initialResponses = {};
         const initialStatus = {};
-        
+
         data.questions.forEach(question => {
           // Get consistent question ID (support different ID formats)
           const questionId = question._id?.$oid || question._id || question.id;
-          
+
           initialStatus[questionId] = {
             answered: false,
             marked: false
           };
-          
+
           console.log('Initializing question:', questionId, 'Type:', question.type, question);
-          
+
           // Initialize responses based on question type with proper structure
           switch (question.type) {
             case 'categorize':
@@ -49,37 +49,37 @@ export default function ViewForm() {
                 category: item.category || ''
               })) || [];
               break;
-              
+
             case 'cloze':
               // Initialize with empty strings for each blank
               const blankCount = question.blanks?.length || 0;
               initialResponses[questionId] = Array(blankCount).fill('');
               console.log(`Initialized cloze question ${questionId} with ${blankCount} blanks`);
               break;
-              
+
             case 'comprehension':
               // Initialize with empty strings for each MCQ
               const mcqCount = question.mcqs?.length || 0;
               initialResponses[questionId] = Array(mcqCount).fill('');
               console.log(`Initialized comprehension question ${questionId} with ${mcqCount} MCQs`);
               break;
-              
+
             case 'checkbox':
               initialResponses[questionId] = false;
               break;
-              
+
             case 'multiple-choice':
             case 'radio':
               initialResponses[questionId] = '';
               break;
-              
+
             default:
               // For text, textarea, and other simple types
               initialResponses[questionId] = '';
               break;
           }
         });
-        
+
         console.log('Initial responses structured:', initialResponses);
         setResponses(initialResponses);
         setQuestionStatus(initialStatus);
@@ -95,7 +95,7 @@ export default function ViewForm() {
 
   const handleResponseChange = (questionId, value) => {
     console.log('Response changing for question:', questionId, 'New value:', value, 'Type:', typeof value, 'Is Array:', Array.isArray(value));
-    
+
     // Update responses with proper state management
     setResponses(prevResponses => {
       const updated = {
@@ -105,7 +105,7 @@ export default function ViewForm() {
       console.log('Updated responses state:', updated);
       return updated;
     });
-    
+
     // Update question answered status
     setQuestionStatus(prev => ({
       ...prev,
@@ -121,31 +121,31 @@ export default function ViewForm() {
       const qId = q._id?.$oid || q._id || q.id;
       return qId === questionId;
     });
-    
+
     if (!question) {
       console.log('Question not found for ID:', questionId);
       return false;
     }
-    
+
     console.log('Checking if answered - Question:', questionId, 'Type:', question.type, 'Value:', value);
-    
+
     switch (question.type) {
       case 'categorize':
         return Array.isArray(value) && value.length > 0 && value.every(item => item.category !== '');
-        
+
       case 'cloze':
         return Array.isArray(value) && value.length > 0 && value.every(blank => blank && blank.trim() !== '');
-        
+
       case 'comprehension':
         return Array.isArray(value) && value.length > 0 && value.every(answer => answer !== '' && answer != null);
-        
+
       case 'checkbox':
         return value === true;
-        
+
       case 'multiple-choice':
       case 'radio':
         return value !== '' && value != null;
-        
+
       default:
         return value !== '' && value != null && value !== undefined;
     }
@@ -195,14 +195,22 @@ export default function ViewForm() {
         setIsSubmitting(false);
         return;
       }
+      console.log('All required questions answered, proceeding with submission');
 
-      await axios.post(`/api/forms/${id}/responses`, { responses });
-      navigate('/confirmation', { 
-        state: { 
+      const response = await axios.post(`http://localhost:5000/forms/${id}/responses`, {
+        responses
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('Response:', response.data);
+      navigate('/confirmation', {
+        state: {
           success: 'Form submitted successfully!',
           answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
           totalQuestions: form.questions.length
-        } 
+        }
       });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
@@ -228,7 +236,7 @@ export default function ViewForm() {
       <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     </div>
   );
-  
+
   if (!form) return <div className="text-center py-12 text-xl">{error || 'Form not found.'}</div>;
 
   // Calculate progress
@@ -238,7 +246,7 @@ export default function ViewForm() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarNavigation 
+      <SidebarNavigation
         isOpen={isSidebarOpen}
         progress={progress}
         answeredCount={answeredCount}
@@ -264,18 +272,18 @@ export default function ViewForm() {
           </div>
 
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-            <FormHeader 
-              headerImage={form.headerImage} 
-              title={form.title} 
+            <FormHeader
+              headerImage={form.headerImage}
+              title={form.title}
               description={form.description}
               progress={progress}
             />
-            
+
             <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-10">
                 {form.questions.map((question, index) => {
                   const questionId = question._id?.$oid || question._id || question.id;
-                  
+
                   return (
                     <QuestionRenderer
                       key={questionId}
@@ -318,7 +326,7 @@ export default function ViewForm() {
                       </>
                     ) : 'Save Draft'}
                   </button>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-4">
                     {draftSaved && (
                       <div className="flex items-center px-4 py-3 bg-green-50 text-green-700 rounded-lg">

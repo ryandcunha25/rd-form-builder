@@ -80,8 +80,11 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Submit form response
-router.post('/:id/responses', async (req, res) => {
+// And the corresponding simplified route:
+router.post('/forms/:id/responses', async (req, res) => {
+  console.log("Received response for form ID:", req.params.id);
+  console.log("Response data:", req.body);
+  
   try {
     const form = await Form.findById(req.params.id);
     if (!form) return res.status(404).json({ message: 'Form not found' });
@@ -90,11 +93,16 @@ router.post('/:id/responses', async (req, res) => {
       formId: req.params.id,
       responses: req.body.responses,
     });
+
     const savedResponse = await newResponse.save();
+    console.log("Saved response:", savedResponse);
     res.status(201).json(savedResponse);
+    
   } catch (err) {
+    console.error("Error saving response:", err);
     res.status(400).json({ message: err.message });
   }
 });
 
 module.exports = router;
+
