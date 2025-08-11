@@ -9,7 +9,7 @@ export default function FieldEditor({
     removeQuestion
 }) {
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-900">
                     {question.type === 'categorize' ? 'Categorize Question' :
@@ -26,14 +26,24 @@ export default function FieldEditor({
 
             <div className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Question Image (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                    <input
+                        type="text"
+                        value={question.questionText}
+                        onChange={(e) => updateQuestion(question.id, { questionText: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                        placeholder="Enter your question"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Question Image (Optional)</label>
                     {question.image ? (
                         <div className="relative mb-2">
                             <img
                                 src={question.image}
                                 alt="Question"
                                 className="w-full h-32 object-contain rounded border"
-                                height={80}
                             />
                             <button
                                 type="button"
@@ -194,6 +204,34 @@ export default function FieldEditor({
                         </div>
                     </div>
                 )}
+
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id={`required-${question.id}`}
+                            checked={question.required}
+                            onChange={(e) => updateQuestion(question.id, { required: e.target.checked })}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor={`required-${question.id}`} className="ml-2 block text-sm text-gray-700">
+                            Required
+                        </label>
+                    </div>
+                    <div className="flex items-center">
+                        <label htmlFor={`points-${question.id}`} className="block text-sm text-gray-700 mr-2">
+                            Points:
+                        </label>
+                        <input
+                            type="number"
+                            id={`points-${question.id}`}
+                            value={question.points}
+                            onChange={(e) => updateQuestion(question.id, { points: parseInt(e.target.value) || 1 })}
+                            min="1"
+                            className="w-16 px-2 py-1 border border-gray-300 rounded-md shadow-sm"
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );

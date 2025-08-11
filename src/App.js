@@ -16,12 +16,13 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/forms/create" element={<CreateForm />} />
-          <Route path="/forms/:id" element={<ViewForm/>} />
-          <Route path="/forms/:id/responses" element={<FormResponses/>} />
+          <Route path="/forms/:id" element={<ViewForm />} />
+          <Route path="/forms/:id/responses" element={<FormResponses />} />
+          <Route path="/forms/:id/edit" element={<EditForm />} />
         </Routes>
       </div>
     </Router>
-  );  
+  );
 }
 
 export default App;

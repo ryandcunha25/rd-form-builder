@@ -290,8 +290,12 @@ export default function ViewForm() {
                       question={question}
                       index={index}
                       value={responses[questionId]}
-                      questionStatus={questionStatus[questionId]}
-                      ref={questionRefs}
+                      questionStatus={{
+                        ...questionStatus[questionId],
+                        // Add a flag for required but unanswered
+                        requiredUnanswered: question.required && !questionStatus[questionId]?.answered
+                      }} ref={questionRefs}
+
                       onChange={(val) => handleResponseChange(questionId, val)}
                       toggleMarkForReview={() => toggleMarkForReview(questionId)}
                     />

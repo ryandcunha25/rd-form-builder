@@ -6,7 +6,6 @@ import { PhotoIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
 import FormPreview from './components/FormPreview';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
-
 export default function EditForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,7 +23,7 @@ export default function EditForm() {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const { data } = await axios.get(`/api/forms/${id}`);
+        const { data } = await axios.get(`http://localhost:5000/${id}`);
         setFormData(data);
       } catch (err) {
         setError('Failed to load form. Please try again.');
@@ -47,24 +46,41 @@ export default function EditForm() {
     }
   };
 
+  const handleQuestionImageUpload = (questionId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        updateQuestion(questionId, { image: event.target.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const addQuestion = (type) => {
     const newQuestion = {
       id: Date.now().toString(),
       type,
       questionText: '',
       required: false,
-      points: 1
+      points: 1,
+      image: ''
     };
 
     if (type === 'categorize') {
-      newQuestion.categories = [];
-      newQuestion.items = [];
+      newQuestion.categories = ['Category 1'];
+      newQuestion.items = [{ id: Date.now().toString(), text: 'Item 1', category: 'Category 1' }];
     } else if (type === 'cloze') {
       newQuestion.clozeText = '';
       newQuestion.blanks = [];
     } else if (type === 'comprehension') {
       newQuestion.passage = '';
-      newQuestion.mcqs = [];
+      newQuestion.mcqs = [{
+        id: Date.now().toString(),
+        question: '',
+        options: ['Option 1', 'Option 2', 'Option 3'],
+        correctAnswer: 0
+      }];
     }
 
     setFormData({
@@ -95,7 +111,7 @@ export default function EditForm() {
     setError('');
 
     try {
-      await axios.put(`/api/forms/${id}`, formData);
+      await axios.put(`http://localhost:5000/${id}/edit`, formData);
       navigate('/', { state: { success: 'Form updated successfully!' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update form. Please try again.');
@@ -180,12 +196,57 @@ export default function EditForm() {
             />
           </div>
 
-          <FieldEditor
-            questions={formData.questions}
-            addQuestion={addQuestion}
-            updateQuestion={updateQuestion}
-            removeQuestion={removeQuestion}
-          />
+          <div className="mb-6 bg-white p-6 rounded-lg shadow">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description (Optional)
+            </label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-6 mb-6">
+            {formData.questions.map((question) => (
+              <FieldEditor
+                key={question.id}
+                question={question}
+                handleQuestionImageUpload={handleQuestionImageUpload}
+                updateQuestion={updateQuestion}
+                removeQuestion={removeQuestion}
+              />
+            ))}
+          </div>
+
+          <div className="mb-6 bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Question</h3>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => addQuestion('categorize')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Categorize Question
+              </button>
+              <button
+                type="button"
+                onClick={() => addQuestion('cloze')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Cloze Question
+              </button>
+              <button
+                type="button"
+                onClick={() => addQuestion('comprehension')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Comprehension
+              </button>
+            </div>
+          </div>
 
           {error && <div className="text-red-500 mb-4 p-4 bg-red-50 rounded">{error}</div>}
 

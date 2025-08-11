@@ -55,7 +55,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update form
-router.put('/:id', async (req, res) => {
+router.put('/:id/edit', async (req, res) => {
   try {
     const updatedForm = await Form.findByIdAndUpdate(
       req.params.id,
