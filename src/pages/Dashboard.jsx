@@ -32,18 +32,19 @@ export default function Dashboard() {
         fetchForms();
     }, []);
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this form?')) {
-            try {
-                await axios.delete(`/api/forms/${id}`);
-                setForms(forms.filter(form => form._id !== id));
-            } catch (err) {
-                setError('Failed to delete form. Please try again.');
-                console.error(err);
-            }
-        }
-    };
-
+const handleDelete = async (id) => {
+  if (window.confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
+    try {
+      await axios.delete(`http://localhost:5000/${id}`);
+      setForms(forms.filter(form => form._id !== id));
+      // Optional: Show success message
+      alert('Form deleted successfully');
+    } catch (err) {
+      setError('Failed to delete form. Please try again.');
+      console.error(err);
+    }
+  }
+};
     if (loading) return (
         <div className="flex justify-center items-center h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>

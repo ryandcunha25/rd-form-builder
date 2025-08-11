@@ -69,14 +69,35 @@ router.put('/:id/edit', async (req, res) => {
   }
 });
 
-// Delete form
+// Delete form and all its responses
 router.delete('/:id', async (req, res) => {
   try {
+    // First delete all responses for this form
+    await Response.deleteMany({ formId: req.params.id });
+    
+    // Then delete the form itself
     const deletedForm = await Form.findByIdAndDelete(req.params.id);
-    if (!deletedForm) return res.status(404).json({ message: 'Form not found' });
-    res.json({ message: 'Form deleted' });
+    
+    if (!deletedForm) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Form not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Form and all its responses deleted successfully',
+      deletedFormId: deletedForm._id
+    });
+    
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error deleting form:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while deleting form',
+      error: err.message 
+    });
   }
 });
 
