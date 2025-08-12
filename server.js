@@ -1,39 +1,69 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const passport = require('passport');
+const session = require('express-session');
 require('dotenv').config();
 
+// Initialize Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares - Configure these FIRST
+// =====================
+// Middleware
+// =====================
 app.use(cors({
-  origin: 'http://localhost:3000', // or whatever your frontend port is
+  origin: 'http://localhost:3000', // your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type'],
+  credentials: true // needed for sessions/cookies
 }));
 
-// Increase payload size limit - THIS MUST COME BEFORE ROUTES
-app.use(express.json({ limit: '50mb' }));  // For JSON payloads
-app.use(express.urlencoded({ limit: '50mb', extended: true }));  // For URL-encoded data
+// Body parsers
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Connect to MongoDB
+// =====================
+// Session setup (for Passport)
+// =====================
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'keyboardcat',
+  resave: false,
+  saveUninitialized: false,
+}));
+
+// =====================
+// Passport config
+// =====================
+require('./backend/config/passport'); // load passport config file
+app.use(passport.initialize());
+app.use(passport.session());
+
+// =====================
+// MongoDB Connection
+// =====================
 mongoose.connect(process.env.REACT_APP_MONGODB_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Default route
+// =====================
+// Routes
+// =====================
 app.get('/', (req, res) => {
   res.send('🚀 Backend is up and running!');
 });
 
-// Import routes
-const formRoutes = require('./backend/routes/forms');
 
-// Apply routes - NO express.raw() here unless specifically needed for file uploads
-app.use('/', formRoutes);
+// Auth routes
+app.use('/', require('./backend/routes/auth')); // Google OAuth routes
+app.use('/', require('./backend/routes/forms')); // Your existing form routes
 
-// Error handling middleware (add this at the end)
+const authMiddleware = require('./backend/middleware/auth');
+app.get('/middleware/auth', authMiddleware, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Error handling middleware
 app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
     return res.status(413).json({
@@ -45,7 +75,9 @@ app.use((err, req, res, next) => {
   res.status(500).send('Something broke!');
 });
 
-// Start server
+// =====================
+// Start Server
+// =====================
 app.listen(PORT, () => {
   console.log(`✅ Server listening on http://localhost:${PORT}`);
 });
