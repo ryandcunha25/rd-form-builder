@@ -163,12 +163,28 @@ router.post('/forms/:id/submission', async (req, res) => {
 router.get('/:id/responses', async (req, res) => {
   try {
     const formId = req.params.id;
-
+    
     // Check if form exists
     const form = await Form.findById(formId);
+    // console.log("Form found:", form);
     if (!form) {
       return res.status(404).json({ success: false, message: 'Form not found' });
     }
+
+    const questions = form.questions.map(q => ({
+      _id: q._id,
+      type: q.type,
+      questionText: q.questionText ||'',
+      image: q.image || '',
+      categories: q.categories || [],
+      items: q.items || [],
+      clozeText: q.clozeText || '',
+      blanks: q.blanks || [],
+      mcqs: q.mcqs || [],
+      points: q.points || 1 // Default to 1 point if not specified
+    }));
+
+    // console.log("\nEACH QUESTION:\n ", questions)
 
     // Get all responses for this form
     const responses = await Response.find({ formId })
@@ -201,12 +217,7 @@ router.get('/:id/responses', async (req, res) => {
         createdAt: form.createdAt,
         updatedAt: form.updatedAt,
         createdBy: form.createdBy,
-        questions: form.questions.map(q => ({
-          _id: q._id,
-          type: q.type,
-          text: q.text,
-          points: q.points || 1 // Include points for each question
-        }))
+        questions: questions,
       },
       responses: responses.map(r => ({
         _id: r._id,
