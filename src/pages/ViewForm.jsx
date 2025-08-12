@@ -7,7 +7,7 @@ import FormHeader from './components/FormHeader';
 import QuestionRenderer from './components/QuestionRenderer';
 
 export default function ViewForm() {
-  const { id } = useParams();
+ const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [responses, setResponses] = useState({});
@@ -18,7 +18,19 @@ export default function ViewForm() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [questionStatus, setQuestionStatus] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Add state for share modal and link
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const questionRefs = useRef({});
+
+  // Generate the shareable link
+  const shareableLink = `${window.location.origin}/forms/${id}`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareableLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -177,6 +189,12 @@ export default function ViewForm() {
     }
   };
 
+  // if (isLoading) return (
+  //   <div className="flex justify-center items-center h-screen">
+  //     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+  //   </div>
+  // );
+
  const handleSubmit = async (e) => {
   e.preventDefault();
   setIsSubmitting(true);
@@ -333,8 +351,45 @@ export default function ViewForm() {
   const progress = Math.round((answeredCount / totalQuestions) * 100);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <SidebarNavigation
+        <div className="flex min-h-screen bg-gray-50">
+
+    {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Share this form</h3>
+              <button 
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Anyone with this link can fill out the form:</p>
+              <div className="flex">
+                <input
+                  type="text"
+                  value={shareableLink}
+                  readOnly
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <button
+                  onClick={copyToClipboard}
+                  className={`px-4 py-2 ${isCopied ? 'bg-green-600' : 'bg-blue-600'} text-white rounded-r-md hover:${isCopied ? 'bg-green-700' : 'bg-blue-700'} transition-colors min-w-[80px]`}
+                >
+                  {isCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+           
+          </div>
+        </div>
+      )}
+
+     <SidebarNavigation
         isOpen={isSidebarOpen}
         progress={progress}
         answeredCount={answeredCount}
@@ -348,7 +403,7 @@ export default function ViewForm() {
       <div className="flex-1 lg:ml-64 transition-all duration-300">
         <div className="container mx-auto px-4 py-8">
           {/* Mobile Navigation Toggle */}
-          <div className="lg:hidden fixed top-4 left-4 z-20">
+           <div className="lg:hidden fixed top-4 left-4 z-20">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 bg-white rounded-lg shadow-md"
@@ -360,11 +415,12 @@ export default function ViewForm() {
           </div>
 
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-            <FormHeader
+             <FormHeader
               headerImage={form.headerImage}
               title={form.title}
               description={form.description}
               progress={progress}
+              onShare={() => setShowShareModal(true)}
             />
 
             <div className="p-6">
@@ -452,7 +508,7 @@ export default function ViewForm() {
       </div>
 
       {/* Debug Panel - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-3 rounded-lg text-xs max-w-sm max-h-32 overflow-auto">
           <details>
             <summary className="cursor-pointer">Debug Info</summary>
@@ -463,7 +519,7 @@ export default function ViewForm() {
             </div>
           </details>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
