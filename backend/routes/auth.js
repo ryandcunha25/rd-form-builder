@@ -4,7 +4,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(process.env.REACT_APP_GOOGLE_CLIENT_ID);
 
 router.post('auth/google/token', async (req, res) => {
   try {
@@ -21,7 +21,7 @@ router.post('auth/google/token', async (req, res) => {
     // 2. Verify Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
+      audience: process.env.REACT_APP_GOOGLE_CLIENT_ID
     });
     
     const { sub: googleId, email, name, picture, email_verified } = ticket.getPayload();
