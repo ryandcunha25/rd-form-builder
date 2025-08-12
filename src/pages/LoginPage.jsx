@@ -35,8 +35,13 @@ export default function LoginPage() {
   };
 
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <GoogleOAuthProvider
+      clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
+      // Add these props:
+      auto_select={false}
+      cancel_on_tap_outside={false}
+      use_fedcm_for_prompt={true}
+    >      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         {/* Main Login Card */}
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
@@ -44,7 +49,7 @@ export default function LoginPage() {
               <h1 className="text-3xl font-bold text-white">Form Builder</h1>
               <p className="mt-2 text-blue-100">Create beautiful forms with ease</p>
             </div>
-            
+
             <div className="p-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-semibold text-gray-800">Welcome!</h2>
@@ -74,20 +79,21 @@ export default function LoginPage() {
                   shape="pill"
                   width="300"
                   text="continue_with"
+                  ux_mode="popup"
                   locale="en_US"
                 />
 
                 <div className="mt-6 text-center">
                   <p className="text-sm text-gray-500">
                     By signing in, you agree to our{' '}
-                    <button 
+                    <button
                       onClick={() => setShowTermsModal(true)}
                       className="text-blue-600 hover:underline font-medium"
                     >
                       Terms
                     </button>{' '}
                     and{' '}
-                    <button 
+                    <button
                       onClick={() => setShowPrivacyModal(true)}
                       className="text-blue-600 hover:underline font-medium"
                     >
@@ -106,7 +112,7 @@ export default function LoginPage() {
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">Privacy Policy</h3>
-                <button 
+                <button
                   onClick={() => setShowPrivacyModal(false)}
                   className="text-gray-400 hover:text-gray-500"
                 >
@@ -118,12 +124,12 @@ export default function LoginPage() {
                 <p className="mb-4 text-gray-600">
                   At Form Builder, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Information We Collect</h5>
                 <p className="mb-4 text-gray-600">
                   When you sign in with Google, we collect your name, email address, and profile picture to create your account. We may also collect usage data to improve our services.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">How We Use Your Information</h5>
                 <ul className="list-disc pl-5 mb-4 text-gray-600 space-y-2">
                   <li>To provide and maintain our service</li>
@@ -132,12 +138,12 @@ export default function LoginPage() {
                   <li>To provide customer support</li>
                   <li>To gather analysis to improve our service</li>
                 </ul>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Data Security</h5>
                 <p className="mb-4 text-gray-600">
                   We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, or destruction.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Changes to This Policy</h5>
                 <p className="mb-4 text-gray-600">
                   We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page.
@@ -161,7 +167,7 @@ export default function LoginPage() {
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">Terms & Conditions</h3>
-                <button 
+                <button
                   onClick={() => setShowTermsModal(false)}
                   className="text-gray-400 hover:text-gray-500"
                 >
@@ -173,12 +179,12 @@ export default function LoginPage() {
                 <p className="mb-4 text-gray-600">
                   Welcome to Form Builder! These terms outline the rules and regulations for using our service.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Acceptance of Terms</h5>
                 <p className="mb-4 text-gray-600">
                   By accessing or using our service, you agree to be bound by these terms. If you disagree, please do not use our service.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">User Responsibilities</h5>
                 <ul className="list-disc pl-5 mb-4 text-gray-600 space-y-2">
                   <li>You must be at least 13 years old to use this service</li>
@@ -186,17 +192,17 @@ export default function LoginPage() {
                   <li>You agree not to use the service for any illegal purpose</li>
                   <li>You will not upload harmful or malicious content</li>
                 </ul>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Content Ownership</h5>
                 <p className="mb-4 text-gray-600">
                   You retain ownership of any content you create using Form Builder. By using our service, you grant us a license to store and display this content as necessary to provide the service.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Service Availability</h5>
                 <p className="mb-4 text-gray-600">
                   We strive to maintain 24/7 availability but cannot guarantee uninterrupted service. We may perform maintenance or updates that temporarily limit access.
                 </p>
-                
+
                 <h5 className="font-medium mt-6 mb-2 text-gray-800">Limitation of Liability</h5>
                 <p className="mb-4 text-gray-600">
                   Form Builder shall not be liable for any indirect, incidental, special, consequential or punitive damages resulting from your use of or inability to use the service.
