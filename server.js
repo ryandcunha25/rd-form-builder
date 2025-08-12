@@ -74,6 +74,13 @@ app.get('/', (req, res) => {
 app.use('/', require('./backend/routes/auth'));   // Google OAuth routes
 app.use('/', require('./backend/routes/forms'));  // Form routes
 
+// Add these headers to your backend responses
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+});
+
 const authMiddleware = require('./backend/middleware/auth');
 app.get('/middleware/auth', authMiddleware, (req, res) => {
   res.json({ user: req.user });
