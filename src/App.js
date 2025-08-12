@@ -8,6 +8,7 @@ import EditForm from '../src/pages/EditForm';
 import ViewForm from '../src/pages/ViewForm';
 import FormResponses from '../src/pages/FormResponses';
 import LoginPage from '../src/pages/LoginPage';
+import Confirmtion from '../src/pages/Confirmation';
 
 function App() {
   return (
@@ -16,10 +17,11 @@ function App() {
         {/* <HomeIcon className="h-6 w-6 text-blue-500" /> */}
         <Routes>
 
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<LoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/forms/create" element={<CreateForm />} />
           <Route path="/forms/:id" element={<ViewForm />} />
+          <Route path="/confirmation" element={<Confirmtion />} />
           <Route path="/forms/:id/responses" element={<FormResponses />} />
           <Route path="/forms/:id/edit" element={<EditForm />} />
         </Routes>
