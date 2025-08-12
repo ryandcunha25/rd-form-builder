@@ -148,7 +148,7 @@ export default function FormHeader({
         </div>
         
         {/* Status Message */}
-        {!acceptingResponses && (
+        {acceptingResponses? acceptingResponses && (
           <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -161,7 +161,7 @@ export default function FormHeader({
               </div>
             </div>
           </div>
-        )}
+        ): ''}
       </div>
     </div>
   );

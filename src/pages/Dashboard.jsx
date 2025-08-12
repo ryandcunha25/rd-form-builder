@@ -51,6 +51,10 @@ export default function Dashboard() {
         fetchForms();
     }, []);
 
+    const acceptingForms = forms.filter(form => form.acceptingResponses);
+      const nonAcceptingForms = forms.filter(form => !form.acceptingResponses);
+
+
     const handleDeleteClick = (id) => {
         setFormToDelete(id);
         setShowDeleteModal(true);
@@ -218,12 +222,12 @@ export default function Dashboard() {
                                     <p className="text-3xl font-bold text-gray-800 mt-2">{forms.length}</p>
                                 </div>
                                 <div className="bg-purple-50 p-5 rounded-lg border-l-4 border-purple-500">
-                                    <p className="text-sm font-medium text-purple-600">Active Forms</p>
-                                    <p className="text-3xl font-bold text-gray-800 mt-2">{forms.length}</p>
+                                    <p className="text-sm font-medium text-purple-600">Inactive Forms</p>
+                                    <p className="text-3xl font-bold text-gray-800 mt-2">{nonAcceptingForms.length}</p>
                                 </div>
                                 <div className="bg-green-50 p-5 rounded-lg border-l-4 border-green-500">
-                                    <p className="text-sm font-medium text-green-600">Recent Activity</p>
-                                    <p className="text-3xl font-bold text-gray-800 mt-2">Today</p>
+                                    <p className="text-sm font-medium text-green-600">Active Forms</p>
+                                    <p className="text-3xl font-bold text-gray-800 mt-2">{acceptingForms.length}</p>
                                 </div>
                             </div>
                         </div>

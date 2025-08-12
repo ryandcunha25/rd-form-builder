@@ -10,7 +10,7 @@ export default function CreateForm() {
         description: '',
         headerImage: '',
         questions: [],
-        collectRespondentInfo: false // NEW: toggle for collecting name/email
+        collectRespondentInfo: false
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -126,7 +126,6 @@ export default function CreateForm() {
                     removeQuestion={removeQuestion}
                 />
 
-                {/* NEW: toggle for respondent info */}
                 <div className="mt-6">
                     <label className="flex items-center gap-2">
                         <input
@@ -145,7 +144,11 @@ export default function CreateForm() {
                     </label>
                 </div>
 
-                <FormPreview formData={formData} />
+                {/* Pass all question details to FormPreview */}
+                <FormPreview 
+                    formData={formData} 
+                    questions={formData.questions} 
+                />
 
                 {error && (
                     <div className="text-red-500 mb-4 p-4 bg-red-50 rounded">
@@ -156,7 +159,7 @@ export default function CreateForm() {
                 <div className="flex justify-end gap-3 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/dashbaord')}
+                        onClick={() => navigate('/dashboard')}
                         className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                     >
                         Cancel

@@ -13,12 +13,11 @@ export default function FieldEditor({
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-900">
                     {question.type === 'categorize' ? 'Categorize Question' :
-                     question.type === 'cloze' ? 'Fill in the Blanks' : 'Comprehension'}
+                        question.type === 'cloze' ? 'Fill in the Blanks' : 'Comprehension'}
                 </h3>
                 <button
                     type="button"
-                    onClick={() => removeQuestion(question.id)}
-                    className="text-red-500 hover:text-red-700"
+                    onClick={() => removeQuestion(question.id)} // Use question.id                    className="text-red-500 hover:text-red-700"
                 >
                     <TrashIcon className="h-5 w-5" />
                 </button>
@@ -66,21 +65,21 @@ export default function FieldEditor({
                         </label>
                     )}
                 </div>
-                
+
                 {question.type === 'categorize' && (
-                    <CategorizeQuestion 
-                        question={question} 
-                        updateQuestion={updateQuestion} 
+                    <CategorizeQuestion
+                        question={question}
+                        updateQuestion={updateQuestion}
                     />
                 )}
-                
+
                 {question.type === 'cloze' && (
-                    <ClozeQuestion 
-                        question={question} 
-                        updateQuestion={updateQuestion} 
+                    <ClozeQuestion
+                        question={question}
+                        updateQuestion={updateQuestion}
                     />
                 )}
-                
+
                 {question.type === 'comprehension' && (
                     <div className="space-y-4">
                         <div>
@@ -103,7 +102,7 @@ export default function FieldEditor({
                                                 type="text"
                                                 value={mcq.question}
                                                 onChange={(e) => updateQuestion(question.id, {
-                                                    mcqs: question.mcqs.map(m => 
+                                                    mcqs: question.mcqs.map(m =>
                                                         m.id === mcq.id ? { ...m, question: e.target.value } : m
                                                     )
                                                 })}
@@ -128,7 +127,7 @@ export default function FieldEditor({
                                                         name={`mcq-${mcq.id}`}
                                                         checked={index === mcq.correctAnswer}
                                                         onChange={() => updateQuestion(question.id, {
-                                                            mcqs: question.mcqs.map(m => 
+                                                            mcqs: question.mcqs.map(m =>
                                                                 m.id === mcq.id ? { ...m, correctAnswer: index } : m
                                                             )
                                                         })}
@@ -140,7 +139,7 @@ export default function FieldEditor({
                                                             const newOptions = [...mcq.options];
                                                             newOptions[index] = e.target.value;
                                                             updateQuestion(question.id, {
-                                                                mcqs: question.mcqs.map(m => 
+                                                                mcqs: question.mcqs.map(m =>
                                                                     m.id === mcq.id ? { ...m, options: newOptions } : m
                                                                 )
                                                             });
@@ -154,7 +153,7 @@ export default function FieldEditor({
                                                             const newCorrect = mcq.correctAnswer > index ? mcq.correctAnswer - 1 :
                                                                 mcq.correctAnswer === index ? 0 : mcq.correctAnswer;
                                                             updateQuestion(question.id, {
-                                                                mcqs: question.mcqs.map(m => 
+                                                                mcqs: question.mcqs.map(m =>
                                                                     m.id === mcq.id ? {
                                                                         ...m,
                                                                         options: newOptions,
@@ -174,7 +173,7 @@ export default function FieldEditor({
                                                 onClick={() => {
                                                     const newOptions = [...mcq.options, `Option ${mcq.options.length + 1}`];
                                                     updateQuestion(question.id, {
-                                                        mcqs: question.mcqs.map(m => 
+                                                        mcqs: question.mcqs.map(m =>
                                                             m.id === mcq.id ? { ...m, options: newOptions } : m
                                                         )
                                                     });
