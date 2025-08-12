@@ -69,11 +69,15 @@ const formSchema = new mongoose.Schema({
       id: String,
       question: String,
       options: [String],
-      correctAnswer: Number // index of correct option
+      correctAnswer: Number
     }]
   }],
-  
-  // NEW FIELD — controls whether form asks for respondent name & email
+
+  acceptingResponses: {
+    type: Boolean,
+    default: true,
+  },
+
   collectRespondentInfo: {
     type: Boolean,
     default: false
@@ -95,7 +99,7 @@ const formSchema = new mongoose.Schema({
 
 
 // Update the updatedAt field before saving
-formSchema.pre('save', function(next) {
+formSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

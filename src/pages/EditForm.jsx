@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import FieldEditor from './components/FieldEditor';
-import { PhotoIcon, EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, EyeIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import FormPreview from './components/FormPreview';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
@@ -13,12 +13,14 @@ export default function EditForm() {
     title: '',
     description: '',
     headerImage: '',
-    questions: []
+    questions: [],
+    acceptingResponses: true
   });
   const [previewMode, setPreviewMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isTogglingAcceptance, setIsTogglingAcceptance] = useState(false);
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -34,6 +36,19 @@ export default function EditForm() {
     };
     fetchForm();
   }, [id]);
+
+  const toggleAcceptingResponses = async () => {
+    setIsTogglingAcceptance(true);
+    try {
+      const { data } = await axios.put(`http://localhost:5000/${id}/toggle-accepting`);
+      setFormData(prev => ({ ...prev, acceptingResponses: data.acceptingResponses }));
+    } catch (err) {
+      setError('Failed to update form status. Please try again.');
+      console.error('Toggle accepting responses error:', err);
+    } finally {
+      setIsTogglingAcceptance(false);
+    }
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -138,31 +153,85 @@ export default function EditForm() {
     setFormData({ ...formData, questions });
   };
 
-  if (isLoading) return <div className="flex justify-center items-center h-64">Loading...</div>;
+  if (isLoading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-        {previewMode ? 'Previewing: ' : 'Editing: '}{formData.title}
+          {previewMode ? 'Previewing: ' : 'Editing: '}{formData.title}
         </h1>
-        <button
-          onClick={() => setPreviewMode(!previewMode)}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          {previewMode ? (
-            <>
-              <PencilIcon className="h-5 w-5" />
-              Switch to Edit
-            </>
-          ) : (
-            <>
-              <EyeIcon className="h-5 w-5" />
-              Preview Form
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleAcceptingResponses}
+            disabled={isTogglingAcceptance}
+            className={`relative inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              formData.acceptingResponses 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            } ${isTogglingAcceptance ? 'opacity-70' : ''}`}
+          >
+            {isTogglingAcceptance ? (
+              <span className="flex items-center gap-1">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Updating...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                {formData.acceptingResponses ? (
+                  <>
+                    <CheckIcon className="h-4 w-4" />
+                    Accepting Responses
+                  </>
+                ) : (
+                  <>
+                    <XMarkIcon className="h-4 w-4" />
+                    Not Accepting
+                  </>
+                )}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setPreviewMode(!previewMode)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            {previewMode ? (
+              <>
+                <PencilIcon className="h-5 w-5" />
+                Switch to Edit
+              </>
+            ) : (
+              <>
+                <EyeIcon className="h-5 w-5" />
+                Preview Form
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {!formData.acceptingResponses && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <XMarkIcon className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                This form is currently not accepting responses. Toggle the button above to change this setting.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {previewMode ? (
         <FormPreview form={formData} />
@@ -248,20 +317,41 @@ export default function EditForm() {
 
           <div className="mb-6 bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Question</h3>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => addQuestion('text')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Text Question
+              </button>
+              <button
+                type="button"
+                onClick={() => addQuestion('multiple-choice')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Multiple Choice
+              </button>
+              <button
+                type="button"
+                onClick={() => addQuestion('checkbox')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Checkbox
+              </button>
               <button
                 type="button"
                 onClick={() => addQuestion('categorize')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Add Categorize Question
+                Add Categorize
               </button>
               <button
                 type="button"
                 onClick={() => addQuestion('cloze')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Add Cloze Question
+                Add Cloze
               </button>
               <button
                 type="button"
@@ -278,7 +368,7 @@ export default function EditForm() {
           <div className="flex justify-end gap-3 mt-8">
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Cancel

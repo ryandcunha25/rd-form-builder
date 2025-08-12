@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Form = require('../models/forms');
 const Response = require('../models/response');
+const authenticate = require('../middleware/auth');
 
 // Get all forms
 router.get('/forms', async (req, res) => {
@@ -22,7 +23,7 @@ router.post('/createForm', async (req, res) => {
     headerImage,
     questions,
     userId,
-    collectRespondentInfo // new field from frontend
+    collectRespondentInfo 
   } = req.body;
 
   console.log("Received form data:", req.body);
@@ -34,7 +35,7 @@ router.post('/createForm', async (req, res) => {
       headerImage,
       questions,
       createdBy: userId,
-      collectRespondentInfo: collectRespondentInfo || false // default false if not provided
+      collectRespondentInfo: collectRespondentInfo || false 
     });
 
     console.log("New form data:", newForm);
@@ -114,6 +115,26 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// PUT request to toggle acceptingResponses
+router.put('/:id/toggle-accepting', async (req, res) => {
+  try {
+    const form = await Form.findById(req.params.id);
+    if (!form) return res.status(404).json({ message: 'Form not found' });
+    console.log("toggle:", form)
+    // // Verify the user owns this form
+    // if (form.createdBy.toString() !== req.user._id.toString()) {
+    //   return res.status(403).json({ message: 'Not authorized to modify this form' });
+    // }
+
+    form.acceptingResponses = !form.acceptingResponses;
+    await form.save();
+
+    res.status(200).json({ success: true, acceptingResponses: form.acceptingResponses });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to toggle accepting responses' });
+  }
+});
+
 // submission of form
 router.post('/forms/:id/submission', async (req, res) => {
   try {
@@ -123,6 +144,13 @@ router.post('/forms/:id/submission', async (req, res) => {
     // Validate responses exist
     if (!req.body.responses) {
       return res.status(400).json({ message: 'Responses are required' });
+    }
+
+    if (!form.acceptingResponses) {
+      return res.status(403).json({
+        success: false,
+        message: 'This form is no longer accepting responses'
+      });
     }
 
     // If form requires respondent info but it's not provided
