@@ -72,6 +72,13 @@ const formSchema = new mongoose.Schema({
       correctAnswer: Number // index of correct option
     }]
   }],
+  
+  // NEW FIELD — controls whether form asks for respondent name & email
+  collectRespondentInfo: {
+    type: Boolean,
+    default: false
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -85,6 +92,7 @@ const formSchema = new mongoose.Schema({
     ref: 'User' // Reference to user who created the form
   }
 });
+
 
 // Update the updatedAt field before saving
 formSchema.pre('save', function(next) {

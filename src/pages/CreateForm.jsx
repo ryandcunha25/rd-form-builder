@@ -9,33 +9,31 @@ export default function CreateForm() {
         title: '',
         description: '',
         headerImage: '',
-        questions: []
+        questions: [],
+        collectRespondentInfo: false // NEW: toggle for collecting name/email
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // Example of image handling in your React component
     const handleImageUpload = (e, questionId = null) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (questionId) {
-                    // For question images
-                    updateQuestion(questionId, { image: event.target.result });
-                } else {
-                    // For header image
-                    setFormData({ ...formData, headerImage: event.target.result });
-                }
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (questionId) {
+                updateQuestion(questionId, { image: event.target.result });
+            } else {
+                setFormData((prev) => ({ ...prev, headerImage: event.target.result }));
+            }
+        };
+        reader.readAsDataURL(file);
     };
 
     const addQuestion = (type) => {
+        const id = Date.now().toString();
         const newQuestion = {
-            id: Date.now().toString(),
+            id,
             type,
             questionText: '',
             required: false,
@@ -48,9 +46,7 @@ export default function CreateForm() {
             newQuestion.items = [{ id: Date.now().toString(), text: 'Item 1', category: 'Category 1' }];
         } else if (type === 'cloze') {
             newQuestion.clozeText = '';
-            newQuestion.blanks = []
-                // { id: Date.now().toString(), word: 'sample', options: ['sample', 'example', 'test'] }
-            ;
+            newQuestion.blanks = [];
         } else if (type === 'comprehension') {
             newQuestion.passage = 'Enter the passage here...';
             newQuestion.mcqs = [
@@ -62,37 +58,36 @@ export default function CreateForm() {
                 }
             ];
         }
-        setFormData({
-            ...formData,
-            questions: [...formData.questions, newQuestion]
-        });
+        setFormData((prev) => ({
+            ...prev,
+            questions: [...prev.questions, newQuestion]
+        }));
     };
 
     const handleQuestionImageUpload = (questionId, e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                updateQuestion(questionId, { image: event.target.result });
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            updateQuestion(questionId, { image: event.target.result });
+        };
+        reader.readAsDataURL(file);
     };
 
     const updateQuestion = (id, updates) => {
-        setFormData({
-            ...formData,
-            questions: formData.questions.map(q =>
+        setFormData((prev) => ({
+            ...prev,
+            questions: prev.questions.map(q =>
                 q.id === id ? { ...q, ...updates } : q
             )
-        });
+        }));
     };
 
     const removeQuestion = (id) => {
-        setFormData({
-            ...formData,
-            questions: formData.questions.filter(q => q.id !== id)
-        });
+        setFormData((prev) => ({
+            ...prev,
+            questions: prev.questions.filter(q => q.id !== id)
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -101,9 +96,11 @@ export default function CreateForm() {
         setError('');
 
         try {
+            console.log(formData);
             const { data } = await axios.post('http://localhost:5000/createForm', formData);
+            
             console.log('Form created successfully:', data);
-            navigate(`dashboard`, {
+            navigate('/dashboard', {
                 state: { success: 'Form created successfully!' }
             });
         } catch (err) {
@@ -129,14 +126,37 @@ export default function CreateForm() {
                     removeQuestion={removeQuestion}
                 />
 
+                {/* NEW: toggle for respondent info */}
+                <div className="mt-6">
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={formData.collectRespondentInfo}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    collectRespondentInfo: e.target.checked
+                                }))
+                            }
+                        />
+                        <span className="text-gray-700">
+                            Collect respondent's name and email
+                        </span>
+                    </label>
+                </div>
+
                 <FormPreview formData={formData} />
 
-                {error && <div className="text-red-500 mb-4 p-4 bg-red-50 rounded">{error}</div>}
+                {error && (
+                    <div className="text-red-500 mb-4 p-4 bg-red-50 rounded">
+                        {error}
+                    </div>
+                )}
 
                 <div className="flex justify-end gap-3 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/dashbaord')}
                         className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                     >
                         Cancel

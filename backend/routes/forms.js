@@ -16,32 +16,45 @@ router.get('/forms', async (req, res) => {
 
 // Create new form
 router.post('/createForm', async (req, res) => {
-  const { title, description, headerImage, questions, userId } = req.body;
-  
+  const {
+    title,
+    description,
+    headerImage,
+    questions,
+    userId,
+    collectRespondentInfo // new field from frontend
+  } = req.body;
+
+  console.log("Received form data:", req.body);
+
   try {
     const newForm = new Form({
       title,
       description,
       headerImage,
       questions,
-      createdBy: userId
+      createdBy: userId,
+      collectRespondentInfo: collectRespondentInfo || false // default false if not provided
     });
 
+    console.log("New form data:", newForm);
+
     const savedForm = await newForm.save();
-    
+
     res.status(201).json({
       success: true,
       message: 'Form created successfully',
       form: savedForm
     });
   } catch (err) {
-    res.status(400).json({ 
+    res.status(400).json({
       success: false,
       message: 'Failed to create form',
-      error: err.message 
+      error: err.message
     });
   }
 });
+
 
 // Get single form
 router.get('/:id', async (req, res) => {
@@ -74,29 +87,29 @@ router.delete('/:id', async (req, res) => {
   try {
     // First delete all responses for this form
     await Response.deleteMany({ formId: req.params.id });
-    
+
     // Then delete the form itself
     const deletedForm = await Form.findByIdAndDelete(req.params.id);
-    
+
     if (!deletedForm) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Form not found' 
+        message: 'Form not found'
       });
     }
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: 'Form and all its responses deleted successfully',
       deletedFormId: deletedForm._id
     });
-    
+
   } catch (err) {
     console.error('Error deleting form:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error while deleting form',
-      error: err.message 
+      error: err.message
     });
   }
 });
@@ -107,35 +120,76 @@ router.post('/forms/:id/submission', async (req, res) => {
     const form = await Form.findById(req.params.id);
     if (!form) return res.status(404).json({ message: 'Form not found' });
 
-    // Create new response with score data
-    const newResponse = new Response({
+    // Validate responses exist
+    if (!req.body.responses) {
+      return res.status(400).json({ message: 'Responses are required' });
+    }
+
+    // If form requires respondent info but it's not provided
+    if (form.collectRespondentInfo && !req.user) {
+      if (!req.body.respondentName || !req.body.respondentEmail) {
+        return res.status(400).json({
+          message: 'Name and email are required for this form submission'
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(req.body.respondentEmail)) {
+        return res.status(400).json({
+          message: 'Please provide a valid email address'
+        });
+      }
+    }
+
+    // Base payload for response
+    const responseData = {
       formId: req.params.id,
       responses: req.body.responses,
-      score: req.body.score || 0, // Default to 0 if not provided
-      maxScore: req.body.maxScore || 0, // Default to 0 if not provided
+      score: req.body.score || 0,
+      maxScore: req.body.maxScore || 0,
       completed: true,
       submittedAt: new Date()
-    });
+    };
 
-    const savedResponse = await newResponse.save();
-    
-    // Update form statistics (optional)
-    await Form.findByIdAndUpdate(req.params.id, {
-      $inc: { 
-        submissionCount: 1,
-        totalScore: req.body.score || 0 
-      },
-      $set: {
-        lastSubmissionAt: new Date()
+    // If user is logged in
+    if (req.user) {
+      responseData.submittedBy = req.user._id;
+      // Still store respondent info if provided (optional)
+      if (req.body.respondentName) {
+        responseData.respondentName = req.body.respondentName;
       }
-    });
+      if (req.body.respondentEmail) {
+        responseData.respondentEmail = req.body.respondentEmail;
+      }
+    }
+    // If anonymous user and form requires respondent info
+    else if (form.collectRespondentInfo) {
+      responseData.respondentName = req.body.respondentName;
+      responseData.respondentEmail = req.body.respondentEmail;
+    }
 
-    console.log("Saved response with score:", {
-      id: savedResponse._id,
-      score: savedResponse.score,
-      maxScore: savedResponse.maxScore,
-      percentage: savedResponse.score / savedResponse.maxScore * 100
-    });
+    const newResponse = new Response(responseData);
+    console.log("Saving response:", newResponse);
+    const savedResponse = await newResponse.save();
+
+    // Update form statistics
+    const updateData = {
+      $inc: { submissionCount: 1 },
+      $set: { lastSubmissionAt: new Date() }
+    };
+
+    // Only update totalScore if scoring is enabled
+    if (typeof req.body.score === 'number') {
+      updateData.$inc.totalScore = req.body.score;
+    }
+
+    await Form.findByIdAndUpdate(req.params.id, updateData);
+
+    // Calculate percentage if maxScore is provided
+    const percentage = req.body.maxScore && req.body.score
+      ? Math.round((req.body.score / req.body.maxScore) * 100)
+      : null;
 
     res.status(201).json({
       success: true,
@@ -144,17 +198,19 @@ router.post('/forms/:id/submission', async (req, res) => {
         formId: savedResponse.formId,
         score: savedResponse.score,
         maxScore: savedResponse.maxScore,
-        percentage: Math.round((savedResponse.score / savedResponse.maxScore) * 100),
-        submittedAt: savedResponse.submittedAt
+        percentage: percentage,
+        submittedAt: savedResponse.submittedAt,
+        ...(savedResponse.respondentName && { respondentName: savedResponse.respondentName }),
+        ...(savedResponse.respondentEmail && { respondentEmail: savedResponse.respondentEmail })
       }
     });
-    
+
   } catch (err) {
     console.error("Error saving response:", err);
-    res.status(400).json({ 
+    res.status(500).json({
       success: false,
       message: 'Failed to submit form response',
-      error: err.message 
+      error: err.message
     });
   }
 });
@@ -163,10 +219,10 @@ router.post('/forms/:id/submission', async (req, res) => {
 router.get('/:id/responses', async (req, res) => {
   try {
     const formId = req.params.id;
-    
+
     // Check if form exists
     const form = await Form.findById(formId);
-    // console.log("Form found:", form);
+    console.log("Form found:", form);
     if (!form) {
       return res.status(404).json({ success: false, message: 'Form not found' });
     }
@@ -174,7 +230,7 @@ router.get('/:id/responses', async (req, res) => {
     const questions = form.questions.map(q => ({
       _id: q._id,
       type: q.type,
-      questionText: q.questionText ||'',
+      questionText: q.questionText || '',
       image: q.image || '',
       categories: q.categories || [],
       items: q.items || [],
@@ -191,6 +247,8 @@ router.get('/:id/responses', async (req, res) => {
       .populate('submittedBy', 'name email')
       .sort({ submittedAt: -1 });
 
+    console.log("Responses found:", responses);
+
     // Calculate max possible score from form questions
     const maxPossibleScore = form.questions.reduce((sum, question) => {
       return sum + (question.points || 1); // Default to 1 point if not specified
@@ -200,7 +258,7 @@ router.get('/:id/responses', async (req, res) => {
     const totalSubmissions = responses.length;
     let averageScore = 0;
     let highestScore = 0;
-    
+
     if (totalSubmissions > 0) {
       const totalScore = responses.reduce((sum, res) => sum + (res.score || 0), 0);
       averageScore = totalScore / totalSubmissions;
@@ -218,6 +276,7 @@ router.get('/:id/responses', async (req, res) => {
         updatedAt: form.updatedAt,
         createdBy: form.createdBy,
         questions: questions,
+
       },
       responses: responses.map(r => ({
         _id: r._id,
@@ -225,6 +284,8 @@ router.get('/:id/responses', async (req, res) => {
         submittedBy: r.submittedBy,
         responses: r.responses,
         score: r.score || 0,
+        respondentName: r.respondentName,  // Add this
+        respondentEmail: r.respondentEmail,
         maxScore: maxPossibleScore,
         percentage: maxPossibleScore > 0 ? Math.round(((r.score || 0) / maxPossibleScore) * 100) : 0
       })),
@@ -236,15 +297,16 @@ router.get('/:id/responses', async (req, res) => {
         averagePercentage: maxPossibleScore > 0 ? parseFloat(((averageScore / maxPossibleScore) * 100).toFixed(2)) : 0,
         uniqueRespondents: new Set(responses.map(r => r.submittedBy?.toString() || 'anonymous')).size
       }
+
     };
 
     res.json(responseData);
   } catch (err) {
     console.error('Error fetching form responses:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error while fetching responses',
-      error: err.message 
+      error: err.message
     });
   }
 });

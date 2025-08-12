@@ -7,7 +7,7 @@ import FormHeader from './components/FormHeader';
 import QuestionRenderer from './components/QuestionRenderer';
 
 export default function ViewForm() {
- const { id } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [responses, setResponses] = useState({});
@@ -22,6 +22,9 @@ export default function ViewForm() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const questionRefs = useRef({});
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
 
   // Generate the shareable link
   const shareableLink = `${window.location.origin}/forms/${id}`;
@@ -195,136 +198,152 @@ export default function ViewForm() {
   //   </div>
   // );
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setError('');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
 
-  try {
-    console.log('Submitting responses:', responses);
-    
-    // Validate that we have responses for required questions
-    const unansweredRequired = form.questions.filter(question => {
-      const questionId = question._id?.$oid || question._id || question.id;
-      return question.required && !isQuestionAnswered(questionId, responses[questionId]);
-    });
+    try {
+      console.log('Submitting responses:', responses);
 
-    if (unansweredRequired.length > 0) {
-      setError(`Please answer all required questions: ${unansweredRequired.map(q => `Question ${form.questions.indexOf(q) + 1}`).join(', ')}`);
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Calculate total points
-    let totalPoints = 0;
-    let maxPossiblePoints = 0;
-
-    form.questions.forEach(question => {
-      const questionId = question._id?.$oid || question._id || question.id;
-      const questionPoints = question.points || 1; // Default to 1 point if not specified
-      maxPossiblePoints += questionPoints;
-      
-      const userAnswer = responses[questionId];
-      console.log(`Checking answer for question ${questionId} (type: ${question.type})`, {
-        userAnswer,
-        correctAnswer: question.correctAnswer
+      // Validate that we have responses for required questions
+      const unansweredRequired = form.questions.filter(question => {
+        const questionId = question._id?.$oid || question._id || question.id;
+        return question.required && !isQuestionAnswered(questionId, responses[questionId]);
       });
 
-      if (!userAnswer) {
-        return; // Skip if no answer provided
+      if (unansweredRequired.length > 0) {
+        setError(`Please answer all required questions: ${unansweredRequired.map(q => `Question ${form.questions.indexOf(q) + 1}`).join(', ')}`);
+        setIsSubmitting(false);
+        return;
       }
 
-      switch (question.type) {
-        case 'categorize':
-          // Check if all items are categorized correctly
-          if (Array.isArray(userAnswer) && question.items) {
-            const allCorrect = question.items.every(item => {
-              const userResponse = userAnswer.find(res => res.itemId === item.id);
-              return userResponse && userResponse.category === item.category;
-            });
-            if (allCorrect) {
-              totalPoints += questionPoints;
-            }
-          }
-          break;
+      // Calculate total points
+      let totalPoints = 0;
+      let maxPossiblePoints = 0;
 
-        case 'cloze':
-          // Check if all blanks are filled correctly
-          if (Array.isArray(userAnswer) && question.blanks) {
-            const allCorrect = question.blanks.every((blank, index) => {
-              return userAnswer[index] === blank.word;
-            });
-            if (allCorrect) {
-              totalPoints += questionPoints;
-            }
-          }
-          break;
+      form.questions.forEach(question => {
+        const questionId = question._id?.$oid || question._id || question.id;
+        const questionPoints = question.points || 1; // Default to 1 point if not specified
+        maxPossiblePoints += questionPoints;
 
-        case 'comprehension':
-          // Check each MCQ answer
-          if (Array.isArray(userAnswer) && question.mcqs) {
-            const allCorrect = question.mcqs.every((mcq, index) => {
-              return userAnswer[index] === mcq.options[mcq.correctAnswer];
-            });
-            if (allCorrect) {
-              totalPoints += questionPoints;
-            }
-          }
-          break;
+        const userAnswer = responses[questionId];
+        console.log(`Checking answer for question ${questionId} (type: ${question.type})`, {
+          userAnswer,
+          correctAnswer: question.correctAnswer
+        });
 
-        case 'checkbox':
-        case 'multiple-choice':
-        case 'radio':
-          // For simple single-answer questions
-          if (question.correctAnswer !== undefined && 
+        if (!userAnswer) {
+          return; // Skip if no answer provided
+        }
+
+        switch (question.type) {
+          case 'categorize':
+            // Check if all items are categorized correctly
+            if (Array.isArray(userAnswer) && question.items) {
+              const allCorrect = question.items.every(item => {
+                const userResponse = userAnswer.find(res => res.itemId === item.id);
+                return userResponse && userResponse.category === item.category;
+              });
+              if (allCorrect) {
+                totalPoints += questionPoints;
+              }
+            }
+            break;
+
+          case 'cloze':
+            // Check if all blanks are filled correctly
+            if (Array.isArray(userAnswer) && question.blanks) {
+              const allCorrect = question.blanks.every((blank, index) => {
+                return userAnswer[index] === blank.word;
+              });
+              if (allCorrect) {
+                totalPoints += questionPoints;
+              }
+            }
+            break;
+
+          case 'comprehension':
+            // Check each MCQ answer
+            if (Array.isArray(userAnswer) && question.mcqs) {
+              const allCorrect = question.mcqs.every((mcq, index) => {
+                return userAnswer[index] === mcq.options[mcq.correctAnswer];
+              });
+              if (allCorrect) {
+                totalPoints += questionPoints;
+              }
+            }
+            break;
+
+          case 'checkbox':
+          case 'multiple-choice':
+          case 'radio':
+            // For simple single-answer questions
+            if (question.correctAnswer !== undefined &&
               JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)) {
-            totalPoints += questionPoints;
-          }
-          break;
+              totalPoints += questionPoints;
+            }
+            break;
 
-        default:
-          // For text answers, we can't auto-score unless there's a correctAnswer
-          if (question.correctAnswer !== undefined && 
+          default:
+            // For text answers, we can't auto-score unless there's a correctAnswer
+            if (question.correctAnswer !== undefined &&
               userAnswer.toString().toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim()) {
-            totalPoints += questionPoints;
-          }
-          break;
-      }
-    });
+              totalPoints += questionPoints;
+            }
+            break;
+        }
+      });
 
-    console.log('Calculated score:', {
-      totalPoints,
-      maxPossiblePoints
-    });
+      console.log('Calculated score:', {
+        totalPoints,
+        maxPossiblePoints
+      });
 
-    const response = await axios.post(`http://localhost:5000/forms/${id}/submission`, {
-      responses,
-      score: totalPoints,
-      maxScore: maxPossiblePoints
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
+      // Add this validation check before submission
+      if (form.collectRespondentInfo && (!name.trim() || !email.trim())) {
+        setError('Please provide your name and email');
+        setIsSubmitting(false);
+        return;
       }
-    });
-    
-    console.log('Submission response:', response.data);
-    navigate('/confirmation', {
-      state: {
-        success: 'Form submitted successfully!',
-        answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
-        totalQuestions: form.questions.length,
+
+      // Add email format validation if needed
+      if (form.collectRespondentInfo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('Please provide a valid email address');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:5000/forms/${id}/submission`, {
+        responses,
         score: totalPoints,
         maxScore: maxPossiblePoints,
-        percentage: Math.round((totalPoints / maxPossiblePoints) * 100)
-      }
-    });
-  } catch (err) {
-    setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
-    console.error('Submit error:', err);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+        respondentName: name,
+        respondentEmail: email
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Submission response:', response.data);
+      navigate('/confirmation', {
+        state: {
+          success: 'Form submitted successfully!',
+          answeredCount: Object.values(questionStatus).filter(s => s.answered).length,
+          totalQuestions: form.questions.length,
+          score: totalPoints,
+          maxScore: maxPossiblePoints,
+          percentage: Math.round((totalPoints / maxPossiblePoints) * 100)
+        }
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
+      console.error('Submit error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const scrollToQuestion = (questionId) => {
     const element = questionRefs.current[questionId];
@@ -351,14 +370,14 @@ export default function ViewForm() {
   const progress = Math.round((answeredCount / totalQuestions) * 100);
 
   return (
-        <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
 
-    {showShareModal && (
+      {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">Share this form</h3>
-              <button 
+              <button
                 onClick={() => setShowShareModal(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -384,12 +403,12 @@ export default function ViewForm() {
                 </button>
               </div>
             </div>
-           
+
           </div>
         </div>
       )}
 
-     <SidebarNavigation
+      <SidebarNavigation
         isOpen={isSidebarOpen}
         progress={progress}
         answeredCount={answeredCount}
@@ -403,7 +422,7 @@ export default function ViewForm() {
       <div className="flex-1 lg:ml-64 transition-all duration-300">
         <div className="container mx-auto px-4 py-8">
           {/* Mobile Navigation Toggle */}
-           <div className="lg:hidden fixed top-4 left-4 z-20">
+          <div className="lg:hidden fixed top-4 left-4 z-20">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 bg-white rounded-lg shadow-md"
@@ -415,7 +434,7 @@ export default function ViewForm() {
           </div>
 
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-             <FormHeader
+            <FormHeader
               headerImage={form.headerImage}
               title={form.title}
               description={form.description}
@@ -425,6 +444,39 @@ export default function ViewForm() {
 
             <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-10">
+                {form.collectRespondentInfo && (
+                  <div className="space-y-6 bg-gray-50 p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">Your Information</h3>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {form.questions.map((question, index) => {
                   const questionId = question._id?.$oid || question._id || question.id;
 

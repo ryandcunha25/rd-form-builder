@@ -11,6 +11,7 @@ import {
     UserIcon,
     CheckCircleIcon,
     XCircleIcon,
+    EnvelopeIcon,   
     ChevronDownIcon,
     ChevronRightIcon,
     ChevronLeftIcon,
@@ -25,6 +26,8 @@ export default function FormResponses() {
     const [formData, setFormData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [formResponses, setFormResponses] = useState([]);
+    const [showResponses, setShowResponses] = useState(false);
     const [selectedSubmission, setSelectedSubmission] = useState(null);
     const [filters, setFilters] = useState({
         search: '',
@@ -39,6 +42,7 @@ export default function FormResponses() {
             try {
                 const response = await axios.get(`http://localhost:5000/${id}/responses`);
                 setFormData(response.data);
+                setFormResponses(response.data.responses || []);
             } catch (err) {
                 setError('Failed to fetch data. Please try again.');
                 console.error(err);
@@ -73,7 +77,7 @@ export default function FormResponses() {
                     </div>
                     <div className="ml-3">
                         <p className="text-sm text-red-700">{error}</p>
-                        <button 
+                        <button
                             onClick={() => window.location.reload()}
                             className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
                         >
@@ -93,8 +97,8 @@ export default function FormResponses() {
         <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-6">
-                    <Link 
-                        to="/dashboard" 
+                    <Link
+                        to="/dashboard"
                         className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
                     >
                         <ArrowLeftIcon className="mr-1 h-4 w-4" />
@@ -125,14 +129,14 @@ export default function FormResponses() {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button 
+                                <button
                                     onClick={() => handleExport('csv')}
                                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                                 >
                                     <ArrowDownTrayIcon className="mr-2 h-4 w-4" />
                                     Export CSV
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handleExport('pdf')}
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                                 >
@@ -220,7 +224,7 @@ export default function FormResponses() {
                                     />
                                 </div>
                                 <div className="relative">
-                                    <button 
+                                    <button
                                         onClick={() => setShowFilters(!showFilters)}
                                         className={`inline-flex items-center px-3 py-2 border rounded-md shadow-sm text-sm font-medium ${showFilters ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
                                     >
@@ -228,12 +232,12 @@ export default function FormResponses() {
                                         Filters
                                         <ChevronDownIcon className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'transform rotate-180' : ''}`} />
                                     </button>
-                                    
+
                                     {showFilters && (
                                         <div className="absolute right-0 mt-2 w-72 sm:w-96 bg-white rounded-md shadow-lg p-4 z-10 border border-gray-200">
                                             <div className="flex justify-between items-center mb-3">
                                                 <h3 className="text-sm font-medium text-gray-900">Filter Responses</h3>
-                                                <button 
+                                                <button
                                                     onClick={() => setShowFilters(false)}
                                                     className="text-gray-400 hover:text-gray-500"
                                                 >
@@ -358,10 +362,10 @@ export default function FormResponses() {
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {submission.user?.name || 'Anonymous'}
+                                                        {submission.submittedBy?.name || submission.respondentName || 'Anonymous'}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
-                                                        {submission.user?.email || 'No email provided'}
+                                                        {submission.submittedBy?.email || submission.respondentEmail || 'No email provided'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -378,8 +382,8 @@ export default function FormResponses() {
                                             <div className="flex items-center">
                                                 <div className="w-16 mr-2">
                                                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-blue-500" 
+                                                        <div
+                                                            className="h-full bg-blue-500"
                                                             style={{ width: `${submission.percentage}%` }}
                                                         ></div>
                                                     </div>
@@ -393,15 +397,15 @@ export default function FormResponses() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                ${submission.percentage >= 80 ? 'bg-green-100 text-green-800' : 
-                                                  submission.percentage >= 50 ? 'bg-yellow-100 text-yellow-800' : 
-                                                  'bg-red-100 text-red-800'}`}>
-                                                {submission.percentage >= 80 ? 'Excellent' : 
-                                                 submission.percentage >= 50 ? 'Average' : 'Needs Improvement'}
+                                                ${submission.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                                                    submission.percentage >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'}`}>
+                                                {submission.percentage >= 80 ? 'Excellent' :
+                                                    submission.percentage >= 50 ? 'Average' : 'Needs Improvement'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button 
+                                            <button
                                                 className="text-blue-600 hover:text-blue-900"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -467,8 +471,8 @@ export default function FormResponses() {
                 {selectedSubmission && (
                     <div className="fixed inset-0 overflow-hidden z-50">
                         <div className="absolute inset-0 overflow-hidden">
-                            <div 
-                                className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                            <div
+                                className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
                                 onClick={() => setSelectedSubmission(null)}
                             ></div>
                             <div className="fixed inset-y-0 right-0 pl-10 max-w-full flex">
@@ -497,15 +501,15 @@ export default function FormResponses() {
                                                             <div className="mt-2 space-y-1 text-sm text-gray-600">
                                                                 <p className="flex items-center">
                                                                     <UserIcon className="mr-2 h-4 w-4" />
-                                                                    {selectedSubmission.user?.name || 'Anonymous Respondent'}
+                                                                    {selectedSubmission.submittedBy?.name || selectedSubmission.respondentName || 'Anonymous Respondent'}
+                                                                </p>
+                                                                <p className="flex items-center">
+                                                                    <EnvelopeIcon className="mr-2 h-4 w-4" />
+                                                                    {selectedSubmission.submittedBy?.email || selectedSubmission.respondentEmail || 'No email provided'}
                                                                 </p>
                                                                 <p className="flex items-center">
                                                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                                                     Submitted: {new Date(selectedSubmission.submittedAt).toLocaleString()}
-                                                                </p>
-                                                                <p className="flex items-center">
-                                                                    <DocumentTextIcon className="mr-2 h-4 w-4" />
-                                                                    ID: {selectedSubmission._id}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -520,8 +524,8 @@ export default function FormResponses() {
                                                             </div>
                                                             <div className="mt-2">
                                                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                                    <div 
-                                                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-400" 
+                                                                    <div
+                                                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
                                                                         style={{ width: `${selectedSubmission.percentage}%` }}
                                                                     ></div>
                                                                 </div>
