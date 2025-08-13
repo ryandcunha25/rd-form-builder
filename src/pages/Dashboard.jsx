@@ -26,17 +26,17 @@ export default function Dashboard() {
     const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+        // const token = localStorage.getItem('token');
+        // const storedUser = localStorage.getItem('user');
 
         // if (!token) {
         //     window.location.href = '/login';
         //     return;
         // }
 
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
+        // if (storedUser) {
+        //     setUser(JSON.parse(storedUser));
+        // }
         const fetchForms = async () => {
             try {
                 const { data } = await axios.get('http://localhost:5000/forms');
