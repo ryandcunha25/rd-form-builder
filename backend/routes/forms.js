@@ -7,6 +7,7 @@ const authenticate = require('../middleware/auth');
 
 // Get all forms
 router.get('/forms', async (req, res) => {
+  console.log("Fetching all forms");
   try {
     const forms = await Form.find().sort({ createdAt: -1 });
     res.json(forms);
