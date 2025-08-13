@@ -17,8 +17,8 @@ function App() {
         {/* <HomeIcon className="h-6 w-6 text-blue-500" /> */}
         <Routes>
 
-          {/* <Route path="/" element={<LoginPage />} /> */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/forms/create" element={<CreateForm />} />
           <Route path="/forms/:id" element={<ViewForm />} />
           <Route path="/confirmation" element={<Confirmtion />} />
