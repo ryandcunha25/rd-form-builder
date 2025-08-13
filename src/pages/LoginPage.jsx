@@ -9,69 +9,31 @@ export default function LoginPage() {
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
   const handleSuccess = async (credentialResponse) => {
-  const idToken = credentialResponse?.credential;
-  if (!idToken) {
-    setError('No credential returned by Google');
-    return;
-  }
-
-  try {
-    const response = await fetch(`${backendUrl}/auth/google/token`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ token: idToken }),
-      credentials: 'include' // Required for cookies
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Login failed (${response.status})`);
+    const idToken = credentialResponse?.credential;
+    if (!idToken) {
+      setError('No credential returned by Google');
+      return;
     }
 
-    const { user } = await response.json();
-    
-    // Store minimal user data in localStorage
-    localStorage.setItem('user', JSON.stringify({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar
-    }));
-    
-    // Redirect with state to prevent flash
-    window.location.href = '/dashboard';
+    try {
+      const res = await fetch(`${backendUrl}/auth/google/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: idToken })
+      });
 
-  } catch (err) {
-    setError(
-      err.message.includes('JSON') 
-        ? 'Invalid server response' 
-        : err.message
-    );
-    console.error('Login error:', err);
-  }
-};
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
 
-// In your GoogleOAuthProvider component
-<GoogleOAuthProvider 
-  clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
-  auto_select={false}
-  cancel_on_tap_outside={false}
-  use_fedcm_for_prompt={true}
->
-  <GoogleLogin
-    onSuccess={handleSuccess}
-    onError={() => setError('Google authentication failed')}
-    ux_mode="popup"
-    theme="filled_blue"
-    size="large"
-    shape="pill"
-    text="continue_with"
-    locale="en_US"
-  />
-</GoogleOAuthProvider>
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.location.href = '/dashboard';
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error', err);
+    }
+  };
+
 
   return (
     <GoogleOAuthProvider
