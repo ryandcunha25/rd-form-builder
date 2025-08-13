@@ -137,7 +137,7 @@ export default function EditForm() {
 
     try {
       await axios.put(`http://localhost:5000/${id}/edit`, formData);
-      navigate('/dashboard', { state: { success: 'Form updated successfully!' } });
+      navigate('/', { state: { success: 'Form updated successfully!' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update form. Please try again.');
       console.error(err);

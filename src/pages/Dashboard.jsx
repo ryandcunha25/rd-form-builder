@@ -29,10 +29,10 @@ export default function Dashboard() {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
+        // if (!token) {
+        //     window.location.href = '/login';
+        //     return;
+        // }
 
         if (storedUser) {
             setUser(JSON.parse(storedUser));

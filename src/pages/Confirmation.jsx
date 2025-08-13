@@ -14,7 +14,7 @@ export default function Confirmation() {
   } = location.state || {};
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to the previous page
+    navigate("/"); // Go back to the previous page
   };
 
   const handleCopyScore = () => {

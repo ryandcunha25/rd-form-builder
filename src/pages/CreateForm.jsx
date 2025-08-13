@@ -159,7 +159,7 @@ export default function CreateForm() {
                 <div className="flex justify-end gap-3 mt-8">
                     <button
                         type="button"
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/')}
                         className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                     >
                         Cancel
