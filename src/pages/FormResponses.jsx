@@ -212,7 +212,7 @@ export default function FormResponses() {
                     <div className="px-6 py-4 sm:px-8 sm:py-5">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <h2 className="text-lg font-medium text-gray-900">Responses</h2>
-                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            {/* <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                 <div className="relative rounded-md shadow-sm w-full sm:w-64">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -322,7 +322,7 @@ export default function FormResponses() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
