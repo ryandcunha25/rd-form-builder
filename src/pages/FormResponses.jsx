@@ -11,7 +11,7 @@ import {
     UserIcon,
     CheckCircleIcon,
     XCircleIcon,
-    EnvelopeIcon,   
+    EnvelopeIcon,
     ChevronDownIcon,
     ChevronRightIcon,
     ChevronLeftIcon,
@@ -36,11 +36,13 @@ export default function FormResponses() {
         user: ''
     });
     const [showFilters, setShowFilters] = useState(false);
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || '$http://localhost:5000';
+
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/${id}/responses`);
+                const response = await axios.get(`${backendUrl}/${id}/responses`);
                 setFormData(response.data);
                 setFormResponses(response.data.responses || []);
             } catch (err) {

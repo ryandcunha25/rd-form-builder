@@ -32,10 +32,13 @@ export default function ViewForm() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
+
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/${id}`);
+        const { data } = await axios.get(`${backendUrl}/${id}`);
         setForm(data);
 
         const initialResponses = {};
@@ -236,7 +239,7 @@ export default function ViewForm() {
         return;
       }
 
-      await axios.post(`http://localhost:5000/forms/${id}/submission`, {
+      await axios.post(`${backendUrl}/forms/${id}/submission`, {
         responses,
         score: totalPoints,
         maxScore: maxPossiblePoints,

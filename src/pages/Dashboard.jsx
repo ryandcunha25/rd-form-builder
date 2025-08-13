@@ -24,6 +24,7 @@ export default function Dashboard() {
     const [formToDelete, setFormToDelete] = useState(null);
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
     useEffect(() => {
         // const token = localStorage.getItem('token');
@@ -39,7 +40,7 @@ export default function Dashboard() {
         // }
         const fetchForms = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/forms');
+                const { data } = await axios.get(`${backendUrl}/forms`);
                 setForms(data);
             } catch (err) {
                 setError('Failed to fetch forms. Please try again.');
@@ -52,7 +53,7 @@ export default function Dashboard() {
     }, []);
 
     const acceptingForms = forms.filter(form => form.acceptingResponses);
-      const nonAcceptingForms = forms.filter(form => !form.acceptingResponses);
+    const nonAcceptingForms = forms.filter(form => !form.acceptingResponses);
 
 
     const handleDeleteClick = (id) => {
@@ -62,7 +63,7 @@ export default function Dashboard() {
 
     const handleDeleteConfirm = async () => {
         try {
-            await axios.delete(`http://localhost:5000/${formToDelete}`);
+            await axios.delete(`${backendUrl}/${formToDelete}`);
             setForms(forms.filter(form => form._id !== formToDelete));
             setSuccessMessage('Form deleted successfully');
             setShowSuccessAlert(true);
@@ -94,7 +95,7 @@ export default function Dashboard() {
                     </div>
                     <h3 className="text-xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h3>
                     <p className="text-gray-600 mb-6">{error}</p>
-                    <button 
+                    <button
                         onClick={() => window.location.reload()}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >

@@ -21,19 +21,20 @@ export default function EditForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isTogglingAcceptance, setIsTogglingAcceptance] = useState(false);
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/${id}`);
-       const transformedData = {
-        ...data,
-        questions: data.questions.map(question => ({
-          ...question,
-          id: question.questionId // Use questionId as id
-        }))
-      };
-      setFormData(transformedData);
+        const { data } = await axios.get(`${backendUrl}/${id}`);
+        const transformedData = {
+          ...data,
+          questions: data.questions.map(question => ({
+            ...question,
+            id: question.questionId // Use questionId as id
+          }))
+        };
+        setFormData(transformedData);
       } catch (err) {
         setError('Failed to load form. Please try again.');
         console.error(err);
@@ -47,7 +48,7 @@ export default function EditForm() {
   const toggleAcceptingResponses = async () => {
     setIsTogglingAcceptance(true);
     try {
-      const { data } = await axios.put(`http://localhost:5000/${id}/toggle-accepting`);
+      const { data } = await axios.put(`${backendUrl}/${id}/toggle-accepting`);
       setFormData(prev => ({ ...prev, acceptingResponses: data.acceptingResponses }));
     } catch (err) {
       setError('Failed to update form status. Please try again.');
@@ -62,7 +63,7 @@ export default function EditForm() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setFormData({...formData, headerImage: event.target.result});
+        setFormData({ ...formData, headerImage: event.target.result });
       };
       reader.readAsDataURL(file);
     }
@@ -82,7 +83,7 @@ export default function EditForm() {
   const addQuestion = (type) => {
     const newQuestion = {
       id: Date.now().toString(),
-        questionId: Date.now().toString(), // Add this line
+      questionId: Date.now().toString(), // Add this line
 
       type,
       questionText: '',
@@ -116,8 +117,8 @@ export default function EditForm() {
   const updateQuestion = (id, updates) => {
     setFormData({
       ...formData,
-      questions: formData.questions.map(q => 
-        q.id === id ? {...q, ...updates} : q
+      questions: formData.questions.map(q =>
+        q.id === id ? { ...q, ...updates } : q
       )
     });
   };
@@ -136,7 +137,7 @@ export default function EditForm() {
     setError('');
 
     try {
-      await axios.put(`http://localhost:5000/${id}/edit`, formData);
+      await axios.put(`${backendUrl}/${id}/edit`, formData);
       navigate('/', { state: { success: 'Form updated successfully!' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update form. Please try again.');
@@ -193,17 +194,16 @@ export default function EditForm() {
                 <p className="text-lg text-gray-600 font-medium">{formData.title || 'Untitled Form'}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* Status Toggle */}
               <button
                 onClick={toggleAcceptingResponses}
                 disabled={isTogglingAcceptance}
-                className={`relative inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                  formData.acceptingResponses 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                className={`relative inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${formData.acceptingResponses
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                     : 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
-                } ${isTogglingAcceptance ? 'opacity-70 scale-95' : ''}`}
+                  } ${isTogglingAcceptance ? 'opacity-70 scale-95' : ''}`}
               >
                 {isTogglingAcceptance ? (
                   <span className="flex items-center gap-2">
@@ -269,18 +269,18 @@ export default function EditForm() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">Header Image</h3>
               </div>
-              
+
               {formData.headerImage ? (
                 <div className="relative group">
-                  <img 
-                    src={formData.headerImage} 
-                    alt="Header preview" 
+                  <img
+                    src={formData.headerImage}
+                    alt="Header preview"
                     className="w-full h-56 object-cover rounded-xl border-2 border-gray-200 shadow-lg"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded-xl flex items-center justify-center">
                     <button
                       type="button"
-                      onClick={() => setFormData({...formData, headerImage: ''})}
+                      onClick={() => setFormData({ ...formData, headerImage: '' })}
                       className="opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white p-3 rounded-full transition-all duration-200 transform hover:scale-110 shadow-lg"
                     >
                       <TrashIcon className="h-5 w-5" />
@@ -315,7 +315,7 @@ export default function EditForm() {
                   type="text"
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-20 focus:border-indigo-500 transition-all duration-200 text-lg"
                   placeholder="Enter your form title..."
                   required
@@ -330,7 +330,7 @@ export default function EditForm() {
                 <textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-20 focus:border-indigo-500 transition-all duration-200 text-lg resize-none"
                   rows={4}
                   placeholder="Describe your form (optional)..."
@@ -368,7 +368,7 @@ export default function EditForm() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">Add New Question</h3>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
                 {[
                   // { type: 'text', label: 'Text', gradient: 'from-blue-500 to-cyan-500' },

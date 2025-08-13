@@ -16,6 +16,9 @@ export default function CreateForm() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
+
     const handleImageUpload = (e, questionId = null) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -90,6 +93,7 @@ export default function CreateForm() {
         }));
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -97,7 +101,7 @@ export default function CreateForm() {
 
         try {
             console.log(formData);
-            const { data } = await axios.post('http://localhost:5000/createForm', formData);
+            const { data } = await axios.post(`${backendUrl}/createForm`, formData);
             
             console.log('Form created successfully:', data);
             navigate('/dashboard', {
