@@ -12,9 +12,17 @@ const PORT = process.env.PORT || 5000;
 // =====================
 // CORS Setup
 // =====================
+
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+});
+
 const allowedOrigins = [
   'http://localhost:3000',               // Local frontend
-  'https://rd-form-builder.vercel.app'   // Production frontend
+  'https://rd-form-builder.vercel.app',
+"  https://rd-form-builder-git-test-feature-ryan-dcunhas-projects.vercel.app"   // Production frontend
 ];
 
 app.use(cors({
@@ -30,6 +38,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+
 
 // Handle preflight requests
 // app.options('*', cors());
@@ -75,11 +85,7 @@ app.use('/', require('./backend/routes/auth'));   // Google OAuth routes
 app.use('/', require('./backend/routes/forms'));  // Form routes
 
 // Add these headers to your backend responses
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
-  next();
-});
+
 
 const authMiddleware = require('./backend/middleware/auth');
 app.get('/middleware/auth', authMiddleware, (req, res) => {
