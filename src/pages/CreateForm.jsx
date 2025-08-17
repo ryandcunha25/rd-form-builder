@@ -104,7 +104,7 @@ export default function CreateForm() {
             const { data } = await axios.post(`${backendUrl}/createForm`, formData);
             
             console.log('Form created successfully:', data);
-            navigate('/dashboard', {
+            navigate('/', {
                 state: { success: 'Form created successfully!' }
             });
         } catch (err) {
